@@ -1,0 +1,10 @@
+module test (
+a,
+b,
+o,
+);
+input  a;
+input  b;
+output  o;
+nor (o, a, b);
+endmodule

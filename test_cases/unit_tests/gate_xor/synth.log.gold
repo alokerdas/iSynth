@@ -1,0 +1,10 @@
+module test (
+a,
+b,
+o,
+);
+input  a;
+input  b;
+output  o;
+xor (o, a, b);
+endmodule

@@ -1,0 +1,10 @@
+module test (
+a,
+ctrl,
+o,
+);
+input  a;
+input  ctrl;
+output  o;
+rtranif0 (a, o, ctrl);
+endmodule

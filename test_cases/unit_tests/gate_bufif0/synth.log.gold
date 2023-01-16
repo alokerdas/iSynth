@@ -1,0 +1,10 @@
+module test (
+a,
+ctrl,
+o,
+);
+input  a;
+input  ctrl;
+output  o;
+bufif0 (o, a, ctrl);
+endmodule

@@ -1,0 +1,13 @@
+module test (
+a,
+o,
+);
+wire  _vdd;
+wire  _vss;
+output  a;
+output  o;
+buf (_vdd, 1'b1);
+buf (_vss, 1'b0);
+bufz (o, _vdd);
+bufz (a, _vss);
+endmodule

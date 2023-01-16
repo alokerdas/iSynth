@@ -32,6 +32,9 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
 {
   static set<string> moduleNames;
   FILE *fp = openLogFile();
+  int writeFF = 0;
+  int writeMux = 0;
+
 
 //  int timUnit = ivl_scope_time_units(scope);
 //  int timPreci = ivl_scope_time_precision(scope);
@@ -255,7 +258,7 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
         fprintf(fp, ", ");
 
       ivl_nexus_t aPinJoint = ivl_logic_pin(aGate, i);
-      unsigned connections = ivl_nexus_ptrs(aPinJoint);
+      unsigned connections = aPinJoint ? ivl_nexus_ptrs(aPinJoint) : 0;
       for (int j = 0; j < connections; j++)
       {
         ivl_nexus_ptr_t aConn = ivl_nexus_ptr(aPinJoint, j);
@@ -328,6 +331,133 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
 //          pulldnSigName = ivl_signal_basename(pinSig);
             fprintf(fp, ", 1'b0");
           }
+        }
+      }
+    }
+    fprintf(fp, ");\n");
+  }
+
+  unsigned trans = ivl_scope_switches(scope);
+  for (int j  = 0; j < trans; j++)
+  {
+    ivl_switch_t aTran = ivl_scope_switch(scope, j);
+    switch (ivl_switch_type(aTran))
+    {
+      case IVL_SW_TRAN:
+        fprintf(fp, "tran (");
+      break;
+      case IVL_SW_TRANIF0:
+        fprintf(fp, "tranif0 (");
+      break;
+      case IVL_SW_TRANIF1:
+        fprintf(fp, "tranif1 (");
+      break;
+      case IVL_SW_RTRAN:
+        fprintf(fp, "rtran (");
+      break;
+      case IVL_SW_RTRANIF0:
+        fprintf(fp, "rtranif0 (");
+      break;
+      case IVL_SW_RTRANIF1:
+        fprintf(fp, "rtranif1 (");
+      break;
+      default:
+      break;
+    }
+
+    for (int i = 0; i < 3; i++)
+    {
+      ivl_signal_t pinSig = NULL;
+      ivl_nexus_t aPinJoint = NULL;
+      if (i)
+      {
+	if (i == 1)
+          aPinJoint = ivl_switch_b(aTran);
+	if (i == 2)
+          aPinJoint = ivl_switch_enable(aTran);
+	if (aPinJoint)
+         fprintf(fp, ", ");
+      }
+      else
+      {
+        aPinJoint = ivl_switch_a(aTran);
+      }
+
+      unsigned connections = aPinJoint ? ivl_nexus_ptrs(aPinJoint) : 0;
+      for (int j = 0; j < connections; j++)
+      {
+        ivl_nexus_ptr_t aConn = ivl_nexus_ptr(aPinJoint, j);
+	ivl_lpm_t pinLpm = ivl_nexus_ptr_lpm(aConn);
+	if (pinLpm)
+	{
+          if (ivl_lpm_type(pinLpm) == IVL_LPM_PART_VP)
+	  {
+            unsigned vpBase = ivl_lpm_base(pinLpm);
+            unsigned vpWidth = ivl_lpm_width(pinLpm);
+            ivl_nexus_t inJoint = ivl_lpm_data(pinLpm, 0);
+            unsigned connections = inJoint ? ivl_nexus_ptrs(inJoint) : 0;
+            for (int j = 0; j < connections; j++)
+            {
+              ivl_nexus_ptr_t aConn = ivl_nexus_ptr(inJoint, j);
+              pinSig = ivl_nexus_ptr_sig(aConn);
+              if (pinSig)
+	      {
+                const char *pinSigName = ivl_signal_basename(pinSig);
+                fprintf(fp, "%s", pinSigName);
+                if (vpWidth > 1)
+                  fprintf(fp, "[%d:%d]", vpBase, vpBase+vpWidth);
+                else
+                  fprintf(fp, "[%d]", vpBase);
+                break;
+	      }
+	    }
+	  }
+          if (ivl_lpm_type(pinLpm) == IVL_LPM_CONCATZ)
+	  {
+            for (int sj = 0; sj < ivl_lpm_size(pinLpm); sj++)
+            {
+              ivl_nexus_t concatInJoint = ivl_lpm_data(pinLpm, sj);
+	      if (concatInJoint == aPinJoint)
+	      {
+                ivl_nexus_t concatOutJoint = ivl_lpm_q(pinLpm);
+                unsigned concatOutConnections = ivl_nexus_ptrs(aPinJoint);
+                for (int tt = 0; tt < concatOutConnections; tt++)
+                {
+                  ivl_nexus_ptr_t aConn = ivl_nexus_ptr(concatOutJoint, tt);
+                  pinSig = ivl_nexus_ptr_sig(aConn);
+                  if (pinSig && !ivl_signal_local(pinSig) &&
+		      (ivl_signal_scope(pinSig) == ivl_scope_parent(ivl_switch_scope(aTran))))
+                  {
+                    const char *pinSigName = ivl_signal_basename(pinSig);
+                    fprintf(fp, "%s[%d]", pinSigName, sj);
+		    break;
+                  }
+                }
+	      }
+	    }
+          }
+        }
+      }
+      if (!pinSig)
+      {
+        ivl_nexus_ptr_t aConn = aPinJoint ?  ivl_nexus_ptr(aPinJoint, 0) : 0;
+        pinSig = ivl_nexus_ptr_sig(aConn);
+        if (pinSig)
+        {
+          const char *pinSigName = ivl_signal_basename(pinSig);
+          fprintf(fp, "%s", pinSigName);
+	  /*
+          if (ivl_switch_type(aTran) == IVL_LO_PULLUP)
+          {
+//          pullupSigName = ivl_signal_basename(pinSig);
+            fprintf(fp, ", 1'b1");
+          }
+          if (ivl_switch_type(aTran) == IVL_LO_PULLDOWN)
+          {
+//          pulldnSigName = ivl_signal_basename(pinSig);
+            fprintf(fp, ", 1'b0");
+          }
+	  */
         }
       }
     }
@@ -414,7 +544,10 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
         fprintf(fp, "ivl_devide #(%d) divide%d (%s", lpmWidth, k, outPiName);
       break;
       case IVL_LPM_FF:
+      {
+        writeFF = 1;
 	writeInstanceFF(anLpm, k);
+      }
       break;
       case IVL_LPM_LATCH:
         fprintf(fp, "ivl_dlat #(%d) dlat%d (%s", lpmWidth, k, outPiName);
@@ -589,8 +722,10 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
   if (ivl_scope_type(scope) != IVL_SCT_GENERATE)
     fprintf(fp, "endmodule\n");
 
-  writeModuleFF();
-  writeModuleMux();
+  if (writeFF)
+    writeModuleFF();
+  if (writeMux)
+    writeModuleMux();
   return 0;
 }
 

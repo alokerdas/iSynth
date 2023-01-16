@@ -1,0 +1,10 @@
+module test (
+a,
+b,
+o,
+);
+input  a;
+input  b;
+output  o;
+nand (o, a, b);
+endmodule

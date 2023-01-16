@@ -1,0 +1,8 @@
+module test (
+a,
+o,
+);
+input  a;
+output  o;
+bufz (o, a);
+endmodule
