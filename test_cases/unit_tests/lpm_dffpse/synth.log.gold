@@ -1,0 +1,26 @@
+module test (
+q,
+d,
+ck,
+st,
+);
+wire  _LOGIC0;
+wire  _LOGIC1;
+input  ck;
+input  d;
+output  q;
+input  st;
+buf (_LOGIC1, 1'b1);
+buf (_LOGIC0, 1'b0);
+ivl_dffpse dff0 (q, ck, st, _LOGIC1, d); // line no 5
+endmodule
+module ivl_dffpse (out, in, clock, enable, set);
+  output out;
+  reg out;
+  input in, clock, enable, set;
+  always @ (posedge clock or posedge set)
+    if (set)
+      out <= 1;
+    else if (enable)
+      out <= in;
+endmodule

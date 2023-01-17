@@ -20,10 +20,11 @@
 #include "ivl_target.h"
 #include "synthMain.h"
 
-void writeInstanceFF(ivl_lpm_t ffLpm, int instNo)
+string writeInstanceFF(ivl_lpm_t ffLpm, int instNo)
 {
   FILE *fp = openLogFile();
   const char *outPiName = NULL;
+  string ffName = "dff";
   unsigned liNo = ivl_lpm_lineno(ffLpm);
   unsigned lpmWidth = ivl_lpm_width(ffLpm);
   ivl_nexus_t outJoint = ivl_lpm_q(ffLpm);
@@ -89,7 +90,7 @@ void writeInstanceFF(ivl_lpm_t ffLpm, int instNo)
       break;
     }
   }
-  string ffName = "dff";
+
   if (ivl_lpm_negedge(ffLpm))
     ffName += "n";
   else
@@ -141,6 +142,7 @@ void writeInstanceFF(ivl_lpm_t ffLpm, int instNo)
     }
     fprintf(fp, "); // line no %d\n", liNo);
   }
+  return ffName;
 }
 
 void writeInstanceMux(ivl_lpm_t muxLpm, int instNo)
@@ -506,35 +508,71 @@ void writeInstanceCmpeq(ivl_lpm_t cmpeqLpm, int instNo)
 void writeModuleMux()
 {
   FILE *fp = openLogFile();
-  fprintf(fp, "module ivl_mux (out, select, in1, in2);\n");
+  fprintf(fp, "module ivl_mux (out, select, in0, in1);\n");
   fprintf(fp, "  output out;\n");
-  fprintf(fp, "  input in1, in2;\n");
-  fprintf(fp, "  input select;\n");
-  fprintf(fp, "  assign out = select ? in1 : in2;\n");
+  fprintf(fp, "  input in1, in0, select;\n");
+  fprintf(fp, "  assign out = select ? in1 : in0;\n");
   fprintf(fp, "endmodule\n");
 }
 
-void writeModuleFF()
+void writeModuleFF(string ffname)
 {
   FILE *fp = openLogFile();
-  fprintf(fp, "module ivl_dffpre (out, clock, reset, enable, in);\n");
+  int presentSR = 0;
+  fprintf(fp, "module ivl_%s (out, in, clock", ffname.c_str());
+  if (ffname.find('e') != string::npos)
+    fprintf(fp, ", enable");
+  if (ffname.find('r') != string::npos)
+    fprintf(fp, ", reset");
+  if (ffname.find('s') != string::npos)
+    fprintf(fp, ", set");
+  fprintf(fp, ");\n");
   fprintf(fp, "  output out;\n");
   fprintf(fp, "  reg out;\n");
-  fprintf(fp, "  input in, clock, reset, enable;\n");
-  fprintf(fp, "  always @ (posedge clock or posedge reset)\n");
-  fprintf(fp, "    if (reset)\n");
-  fprintf(fp, "      out <= 0;\n");
-  fprintf(fp, "    else if (enable)\n");
-  fprintf(fp, "      out <= in;\n");
-  fprintf(fp, "endmodule\n");
-  fprintf(fp, "module ivl_dffpse (out, clock, set, enable, in);\n");
-  fprintf(fp, "  output out;\n");
-  fprintf(fp, "  reg out;\n");
-  fprintf(fp, "  input in, clock, set, enable;\n");
-  fprintf(fp, "  always @ (posedge clock or posedge set)\n");
-  fprintf(fp, "    if (set)\n");
-  fprintf(fp, "      out <= 1;\n");
-  fprintf(fp, "    else if (enable)\n");
+  fprintf(fp, "  input in, clock");
+  if (ffname.find('e') != string::npos)
+    fprintf(fp, ", enable");
+  if (ffname.find('r') != string::npos)
+    fprintf(fp, ", reset");
+  if (ffname.find('s') != string::npos)
+    fprintf(fp, ", set");
+  fprintf(fp, ";\n");
+  if (ffname.find('p') != string::npos)
+    fprintf(fp, "  always @ (posedge clock");
+  else if (ffname.find('n') != string::npos)
+    fprintf(fp, "  always @ (negedge clock");
+  if (ffname.find('r') != string::npos)
+    fprintf(fp, " or posedge reset");
+  if (ffname.find('s') != string::npos)
+    fprintf(fp, " or posedge set");
+  fprintf(fp, ")\n");
+  if (ffname.find('r') != string::npos)
+  {
+    presentSR = 1;
+    fprintf(fp, "    if (reset)\n");
+    fprintf(fp, "      out <= 0;\n");
+  }
+  if (ffname.find('s') != string::npos)
+  {
+    if (presentSR)
+      fprintf(fp, "    else if (set)\n");
+    else
+      fprintf(fp, "    if (set)\n");
+    fprintf(fp, "      out <= 1;\n");
+    presentSR = 1;
+  }
+  if (ffname.find('e') != string::npos)
+  {
+    if (presentSR)
+      fprintf(fp, "    else if (enable)\n");
+    else
+      fprintf(fp, "    if (enable)\n");
+  }
+  else
+  {
+    if (presentSR)
+      fprintf(fp, "    else\n");
+  }
   fprintf(fp, "      out <= in;\n");
   fprintf(fp, "endmodule\n");
 }

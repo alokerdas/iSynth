@@ -27,9 +27,9 @@ extern FILE * openLogFile(const char *fileName = NULL);
 extern void readConfiguration(map< int, map<string, string> > & table);
 extern void printViolation(int ruleNo, int lineNo, const char* vlogFileName, ...);
 
-extern void writeModuleFF();
+extern void writeModuleFF(string fnm);
 extern void writeModuleMux();
-extern void writeInstanceFF(ivl_lpm_t lpm, int no);
+extern string writeInstanceFF(ivl_lpm_t lpm, int no);
 extern void writeInstanceMux(ivl_lpm_t lpm, int no);
 extern void writeInstanceReor(ivl_lpm_t lpm, int no);
 extern void writeInstanceRenor(ivl_lpm_t lpm, int no);

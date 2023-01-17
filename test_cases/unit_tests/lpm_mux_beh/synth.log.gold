@@ -1,0 +1,21 @@
+module test (
+o,
+d,
+c,
+sl,
+);
+wire  _LOGIC0;
+wire  _LOGIC1;
+input  c;
+input  d;
+output  o;
+input  sl;
+buf (_LOGIC1, 1'b1);
+buf (_LOGIC0, 1'b0);
+ivl_mux mux0 (o, sl, d, c); // line no 6
+endmodule
+module ivl_mux (out, select, in0, in1);
+  output out;
+  input in1, in0, select;
+  assign out = select ? in1 : in0;
+endmodule

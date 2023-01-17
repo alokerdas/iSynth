@@ -1,0 +1,17 @@
+module test (
+o,
+d,
+c,
+sl,
+);
+input  c;
+input  d;
+output  o;
+input  sl;
+ivl_mux mux0 (o, sl, d, c); // line no 4
+endmodule
+module ivl_mux (out, select, in0, in1);
+  output out;
+  input in1, in0, select;
+  assign out = select ? in1 : in0;
+endmodule
