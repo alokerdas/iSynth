@@ -1,0 +1,13 @@
+module test (
+o,
+a,
+b,
+);
+input  a;
+input  b;
+output [1:0] o;
+// concat starts line no 4
+buf (o[0], a);
+buf (o[1], b);
+// concat ends line no 4
+endmodule

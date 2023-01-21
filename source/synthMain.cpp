@@ -248,6 +248,7 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
       }
       break;
       default:
+        fprintf(fp, "unknown\n");
       break;
     }
     unsigned pins = ivl_logic_pins(aGate);
@@ -362,6 +363,7 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
         fprintf(fp, "rtranif1 (");
       break;
       default:
+        fprintf(fp, "unknown\n");
       break;
     }
 
@@ -467,6 +469,10 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
   unsigned lpms = ivl_scope_lpms(scope);
   for (int k = 0; k < lpms; k++)
   {
+    unsigned outPinWidth = 0;
+    unsigned outMSB = 0;
+    unsigned outLSB = 0;
+    int litEndn = 0;
     const char *outPiName = NULL;
     ivl_lpm_t anLpm = ivl_scope_lpm(scope, k);
     unsigned liNo = ivl_lpm_lineno(anLpm);
@@ -480,13 +486,17 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
       if (pinSig)
       {
         outPiName = ivl_signal_basename(pinSig);
-//	break;
+        outPinWidth = ivl_signal_width(pinSig);
+//        outMSB = ivl_signal_packed_msb(pinSig, 0);
+//        outLSB = ivl_signal_packed_lsb(pinSig, 0);
+//        litEndn = (outMSB > outLSB);
+	break;
       }
     }
     switch (ivl_lpm_type(anLpm))
     {
       case IVL_LPM_ABS:
-        fprintf(fp, "ivl_abs #(%d) abs%d (%s", lpmWidth, k, outPiName);
+        fprintf(fp, "// ivl_abs #(%d) abs%d (%s", lpmWidth, k, outPiName);
       break;
       case IVL_LPM_ADD:
         fprintf(fp, "ivl_add #(%d) add%d (%s", lpmWidth, k, outPiName);
@@ -504,10 +514,42 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
         fprintf(fp, "ivl_castreal #(%d) castreal%d (%s", lpmWidth, k, outPiName);
       break;
       case IVL_LPM_CONCAT:
-        fprintf(fp, "ivl_concat #(%d) concat%d (%s", lpmWidth, k, outPiName);
+      {
+        fprintf(fp, "// concat starts line no %d\n", liNo);
+        int outBit = 0;
+        unsigned inputs = ivl_lpm_size(anLpm);
+        for (int i = 0; i < inputs; i++)
+        {
+          ivl_nexus_t inJoint = ivl_lpm_data(anLpm, i);
+          connections = inJoint? ivl_nexus_ptrs(inJoint) : 0;
+          for (int j = 0; j < connections; j++)
+          {
+            ivl_nexus_ptr_t aConn = ivl_nexus_ptr(inJoint, j);
+            ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
+            if (pinSig)
+            {
+              const char *piName = ivl_signal_basename(pinSig);
+              unsigned piWidth = ivl_signal_width(pinSig);
+              if (piWidth > 1)
+              {
+                for (int inBit = 0; inBit < piWidth; inBit++)
+                {
+                  fprintf(fp, "buf (%s[%d], %s[%d]);\n", outPiName, outBit++, piName, inBit);
+                }
+              }
+              else
+              {
+                fprintf(fp, "buf (%s[%d], %s);\n", outPiName, outBit++, piName);
+              }
+            }
+            break;
+          }
+        }
+        fprintf(fp, "// concat ends line no %d\n", liNo);
+      }
       break;
       case IVL_LPM_CONCATZ:
-        //fprintf(fp, "ivl_concatz #(%d) concatz%d (%s", lpmWidth, k, outPiName);
+        fprintf(fp, "// ivl_concatz #(%d) concatz%d (%s", lpmWidth, k, outPiName);
       break;
       case IVL_LPM_CMP_EEQ:
         fprintf(fp, "ivl_cmpeeq #(%d) cmpeeq%d (%s", lpmWidth, k, outPiName);
@@ -565,7 +607,30 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
       }
       break;
       case IVL_LPM_PART_VP:
-//        fprintf(fp, "ivl_vp #(%d) vp%d (%s", lpmWidth, k, outPiName);
+      {
+        unsigned vpBase = ivl_lpm_base(anLpm);
+        ivl_nexus_t inJoint = ivl_lpm_data(anLpm, 0);
+        unsigned connections = inJoint ? ivl_nexus_ptrs(inJoint) : 0;
+        for (int j = 0; j < connections; j++)
+        {
+          ivl_nexus_ptr_t aConn = ivl_nexus_ptr(inJoint, j);
+          ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
+          if (pinSig)
+	  {
+            const char *pinSigName = ivl_signal_basename(pinSig);
+            if (lpmWidth > 1)
+            {
+              for (int vp = 0; vp < lpmWidth; vp++)
+                fprintf(fp, "buf (%s[%d], %s[%d])\n", outPiName, vp, pinSigName, vp+vpBase);
+            }
+            else
+            {
+              fprintf(fp, "buf (%s, %s[%d])\n", outPiName, pinSigName, vpBase);
+            }
+            break;
+	  }
+	}
+      }
       break;
       case IVL_LPM_PART_PV:
         fprintf(fp, "ivl_pv #(%d) pv%d (%s", lpmWidth, k, outPiName);
@@ -619,6 +684,7 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
         fprintf(fp, "ivl_ufunc #(%d) ufunc%d (%s", lpmWidth, k, outPiName);
       break;
       default:
+        fprintf(fp, "unknown\n");
       break;
     }
     if ((ivl_lpm_type(anLpm) != IVL_LPM_FF) &&
@@ -628,7 +694,7 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
         (ivl_lpm_type(anLpm) != IVL_LPM_RE_NOR) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_CMP_EQ) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_PART_VP) &&
-        (ivl_lpm_type(anLpm) != IVL_LPM_CONCATZ))
+        (ivl_lpm_type(anLpm) != IVL_LPM_CONCAT))
     {
       unsigned inputs = ivl_lpm_size(anLpm);
       for (int i = 0; i < inputs; i++)

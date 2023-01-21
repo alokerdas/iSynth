@@ -354,6 +354,7 @@ void writeInstanceSubtract(ivl_lpm_t subtrLpm, int instNo)
   const char *outPiName = NULL;
   const char *in0PiName = NULL;
   const char *in1PiName = NULL;
+  const char *broPiName = NULL;
   unsigned liNo = ivl_lpm_lineno(subtrLpm);
   unsigned lpmWidth = ivl_lpm_width(subtrLpm);
   ivl_nexus_t outJoint = ivl_lpm_q(subtrLpm);
@@ -361,14 +362,14 @@ void writeInstanceSubtract(ivl_lpm_t subtrLpm, int instNo)
   for (int j = 0; j < connections; j++)
   {
     ivl_nexus_ptr_t aConn = ivl_nexus_ptr(outJoint, j);
-    ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
-    if (pinSig)
+    ivl_signal_t outPinSig = ivl_nexus_ptr_sig(aConn);
+    if (outPinSig)
     {
-      outPiName = ivl_signal_basename(pinSig);
+      outPiName = ivl_signal_basename(outPinSig);
     }
   }
-  unsigned inputs = 2;
-  for (int i = 0; i < inputs; i++)
+  unsigned lpmInputs = ivl_lpm_size(subtrLpm);
+  for (int i = 0; i < lpmInputs; i++)
   {
     ivl_nexus_t inpJoint = ivl_lpm_data(subtrLpm, i);
     connections = inpJoint? ivl_nexus_ptrs(inpJoint) : 0;
@@ -378,7 +379,9 @@ void writeInstanceSubtract(ivl_lpm_t subtrLpm, int instNo)
       ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
       if (pinSig)
       {
-        if (i)
+        if (i == 2)
+          broPiName = ivl_signal_basename(pinSig);
+        else if (i == 1)
           in1PiName = ivl_signal_basename(pinSig);
         else
           in0PiName = ivl_signal_basename(pinSig);
@@ -387,35 +390,37 @@ void writeInstanceSubtract(ivl_lpm_t subtrLpm, int instNo)
     }
   }
   fprintf(fp, "// subtr starts line no %d\n", liNo);
+  fprintf(fp, "wire [%d:0] fsbaro%d;\n", lpmWidth, instNo);
+  if (broPiName)
+    fprintf(fp, "buf (fsbaro%d[0], broPiName);\n", instNo);
+  else
+    fprintf(fp, "buf (fsbaro%d[0], _LOGIC0);\n", instNo);
+
   if (lpmWidth > 1)
   {
-    fprintf(fp, "wire [%d:0] fsbaro%d;\n", lpmWidth, instNo);
-    fprintf(fp, "wire [%d:0] hsres%d, hsresnot%d, in1not%d, hs1baro%d, hs2baro%d;\n", lpmWidth-1, instNo, instNo, instNo, instNo, instNo);
-    fprintf(fp, "buf (fsbaro%d[0], _LOGIC0);\n", instNo);
+    fprintf(fp, "wire [%d:0] hsres%d, hsresnot%d, in0not%d, hs0baro%d, hs1baro%d;\n", lpmWidth-1, instNo, instNo, instNo, instNo, instNo);
     for (int fm = 0; fm < lpmWidth; fm++)
     {
       fprintf(fp, "// bit no %d\n", fm);
       fprintf(fp, "xor (hsres%d[%d], %s[%d], %s[%d]);\n", instNo, fm, in0PiName, fm, in1PiName, fm);
-      fprintf(fp, "not (in1not%d[%d], %s[%d]);\n", instNo, fm, in0PiName, fm);
-      fprintf(fp, "and (hs1baro%d[%d], in1not%d[%d], %s[%d]);\n", instNo, fm, instNo, fm, in1PiName, fm);
+      fprintf(fp, "not (in0not%d[%d], %s[%d]);\n", instNo, fm, in0PiName, fm);
+      fprintf(fp, "and (hs0baro%d[%d], in0not%d[%d], %s[%d]);\n", instNo, fm, instNo, fm, in1PiName, fm);
       fprintf(fp, "xor (%s[%d], hsres%d[%d], fsbaro%d[%d]);\n", outPiName, fm, instNo, fm, instNo, fm);
       fprintf(fp, "not (hsresnot%d[%d], hsres%d[%d]);\n", instNo, fm, instNo, fm);
-      fprintf(fp, "and (hs2baro%d[%d], hsresnot%d[%d], fsbaro%d[%d]);\n", instNo, fm, instNo, fm, instNo, fm);
-      fprintf(fp, "or (fsbaro%d[%d], hs1baro%d[%d], hs2baro%d[%d]);\n", instNo, fm+1, instNo, fm, instNo, fm);
+      fprintf(fp, "and (hs1baro%d[%d], hsresnot%d[%d], fsbaro%d[%d]);\n", instNo, fm, instNo, fm, instNo, fm);
+      fprintf(fp, "or (fsbaro%d[%d], hs0baro%d[%d], hs1baro%d[%d]);\n", instNo, fm+1, instNo, fm, instNo, fm);
     }
   }
   else
   {
-    fprintf(fp, "wire fsbaro%d[1:0];\n", instNo);
-    fprintf(fp, "wire hsres%d, hsresnot%d, in1not%d, hs1baro%d, hs2baro%d;\n", instNo, instNo, instNo, instNo, instNo);
-    fprintf(fp, "buf (fsbaro%d[0], _LOGIC0);\n", instNo);
+    fprintf(fp, "wire hsres%d, hsresnot%d, in0not%d, hs0baro%d, hs1baro%d;\n", instNo, instNo, instNo, instNo, instNo);
     fprintf(fp, "xor (hsres%d, %s, %s);\n", instNo, in0PiName, in1PiName);
-    fprintf(fp, "not (in1not%d, %s);\n", instNo, in0PiName);
-    fprintf(fp, "and (hs1baro%d, in1not%d, %s);\n", instNo, instNo, in1PiName);
+    fprintf(fp, "not (in0not%d, %s);\n", instNo, in0PiName);
+    fprintf(fp, "and (hs0baro%d, in0not%d, %s);\n", instNo, instNo, in1PiName);
     fprintf(fp, "xor (%s, hsres%d, fsbaro%d[0]);\n", outPiName, instNo, instNo);
     fprintf(fp, "not (hsresnot%d, hsres%d);\n", instNo, instNo);
-    fprintf(fp, "and (hs2baro%d, hsresnot%d, fsbaro%d[0]);\n", instNo, instNo, instNo);
-    fprintf(fp, "or (fsbaro%d[1], hs1baro%d, hs2baro%d);\n", instNo, instNo, instNo);
+    fprintf(fp, "and (hs1baro%d, hsresnot%d, fsbaro%d[0]);\n", instNo, instNo, instNo);
+    fprintf(fp, "or (fsbaro%d[1], hs0baro%d, hs1baro%d);\n", instNo, instNo, instNo);
   }
   fprintf(fp, "// subtr ends line no %d\n", liNo);
 }
