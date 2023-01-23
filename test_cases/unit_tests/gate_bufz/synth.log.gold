@@ -4,5 +4,5 @@ o,
 );
 input  a;
 output  o;
-bufz (o, a);
+buf (o, a);
 endmodule

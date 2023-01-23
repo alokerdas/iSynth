@@ -183,7 +183,7 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
         fprintf(fp, "buft (");
       break;
       case IVL_LO_BUFZ:
-        fprintf(fp, "bufz (");
+        fprintf(fp, "buf (");
       break;
       case IVL_LO_NOT:
         fprintf(fp, "not (");
@@ -499,7 +499,7 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
         fprintf(fp, "// ivl_abs #(%d) abs%d (%s", lpmWidth, k, outPiName);
       break;
       case IVL_LPM_ADD:
-        fprintf(fp, "ivl_add #(%d) add%d (%s", lpmWidth, k, outPiName);
+        writeInstanceAdder(anLpm, k);
       break;
       case IVL_LPM_ARRAY:
         fprintf(fp, "ivl_array #(%d) array%d (%s", lpmWidth, k, outPiName);
@@ -621,11 +621,11 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
             if (lpmWidth > 1)
             {
               for (int vp = 0; vp < lpmWidth; vp++)
-                fprintf(fp, "buf (%s[%d], %s[%d])\n", outPiName, vp, pinSigName, vp+vpBase);
+                fprintf(fp, "buf (%s[%d], %s[%d]);\n", outPiName, vp, pinSigName, vp+vpBase);
             }
             else
             {
-              fprintf(fp, "buf (%s, %s[%d])\n", outPiName, pinSigName, vpBase);
+              fprintf(fp, "buf (%s, %s[%d]);\n", outPiName, pinSigName, vpBase);
             }
             break;
 	  }
@@ -675,7 +675,6 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
       break;
       case IVL_LPM_SUB:
         writeInstanceSubtract(anLpm, k);
-//        fprintf(fp, "ivl_subtract #(%d) subtartc%d (%s", lpmWidth, k, outPiName);
       break;
       case IVL_LPM_SUBSTITUTE:
         fprintf(fp, "ivl_substitute #(%d) substitute%d (%s", lpmWidth, k, outPiName);
@@ -689,6 +688,7 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
     }
     if ((ivl_lpm_type(anLpm) != IVL_LPM_FF) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_MUX) &&
+        (ivl_lpm_type(anLpm) != IVL_LPM_ADD) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_SUB) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_RE_OR) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_RE_NOR) &&

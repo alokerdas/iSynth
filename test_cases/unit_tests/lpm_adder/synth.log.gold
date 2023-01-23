@@ -1,0 +1,19 @@
+module test (
+s,
+a,
+b,
+);
+input  a;
+input  b;
+output  s;
+// adr starts line no 4
+wire [1:0] facry0;
+buf (facry0[0], _LOGIC0);
+wire hares0, haresnot0, in0not0, ha0cry0, ha1cry0;
+xor (hares0, a, b);
+and (ha0cry0, a, b);
+xor (s, hares0, facry0[0]);
+and (ha1cry0, hares0, facry0[0]);
+or (facry0[1], ha0cry0, ha1cry0);
+// adr ends line no 4
+endmodule

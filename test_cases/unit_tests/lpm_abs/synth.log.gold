@@ -5,5 +5,5 @@ wire [31:0] _ivl_0;
 wire [31:0] a;
 output  o;
 // ivl_abs #(32) abs0 (_ivl_0, a); // line no 4
-buf (o, _ivl_0[0])
+buf (o, _ivl_0[0]);
 endmodule

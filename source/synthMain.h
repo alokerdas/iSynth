@@ -34,5 +34,6 @@ extern void writeInstanceMux(ivl_lpm_t lpm, int no);
 extern void writeInstanceReor(ivl_lpm_t lpm, int no);
 extern void writeInstanceRenor(ivl_lpm_t lpm, int no);
 extern void writeInstanceCmpeq(ivl_lpm_t lpm, int no);
+extern void writeInstanceAdder(ivl_lpm_t lpm, int no);
 extern void writeInstanceSubtract(ivl_lpm_t lpm, int no);
 #endif

@@ -348,6 +348,79 @@ void writeInstanceRenor(ivl_lpm_t renorLpm, int instNo)
   }
 }
 
+void writeInstanceAdder(ivl_lpm_t adrLpm, int instNo)
+{
+  FILE *fp = openLogFile();
+  const char *outPiName = NULL;
+  const char *in0PiName = NULL;
+  const char *in1PiName = NULL;
+  const char *cryPiName = NULL;
+  unsigned liNo = ivl_lpm_lineno(adrLpm);
+  unsigned lpmWidth = ivl_lpm_width(adrLpm);
+  ivl_nexus_t outJoint = ivl_lpm_q(adrLpm);
+  unsigned connections = ivl_nexus_ptrs(outJoint);
+  for (int j = 0; j < connections; j++)
+  {
+    ivl_nexus_ptr_t aConn = ivl_nexus_ptr(outJoint, j);
+    ivl_signal_t outPinSig = ivl_nexus_ptr_sig(aConn);
+    if (outPinSig)
+    {
+      outPiName = ivl_signal_basename(outPinSig);
+    }
+  }
+  unsigned lpmInputs = ivl_lpm_size(adrLpm);
+  for (int i = 0; i < lpmInputs; i++)
+  {
+    ivl_nexus_t inpJoint = ivl_lpm_data(adrLpm, i);
+    connections = inpJoint? ivl_nexus_ptrs(inpJoint) : 0;
+    for (int j = 0; j < connections; j++)
+    {
+      ivl_nexus_ptr_t aConn = ivl_nexus_ptr(inpJoint, j);
+      ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
+      if (pinSig)
+      {
+        if (i == 2)
+          cryPiName = ivl_signal_basename(pinSig);
+        else if (i == 1)
+          in1PiName = ivl_signal_basename(pinSig);
+        else
+          in0PiName = ivl_signal_basename(pinSig);
+        break;
+      }
+    }
+  }
+  fprintf(fp, "// adr starts line no %d\n", liNo);
+  fprintf(fp, "wire [%d:0] facry%d;\n", lpmWidth, instNo);
+  if (cryPiName)
+    fprintf(fp, "buf (facry%d[0], cryPiName);\n", instNo);
+  else
+    fprintf(fp, "buf (facry%d[0], _LOGIC0);\n", instNo);
+
+  if (lpmWidth > 1)
+  {
+    fprintf(fp, "wire [%d:0] hares%d, haresnot%d, in0not%d, ha0cry%d, ha1cry%d;\n", lpmWidth-1, instNo, instNo, instNo, instNo, instNo);
+    for (int fm = 0; fm < lpmWidth; fm++)
+    {
+      fprintf(fp, "// bit no %d\n", fm);
+      fprintf(fp, "xor (hares%d[%d], %s[%d], %s[%d]);\n", instNo, fm, in0PiName, fm, in1PiName, fm);
+      fprintf(fp, "and (ha0cry%d[%d], %s[%d], %s[%d]);\n", instNo, fm, in0PiName, fm, in1PiName, fm);
+      fprintf(fp, "xor (%s[%d], hares%d[%d], facry%d[%d]);\n", outPiName, fm, instNo, fm, instNo, fm);
+      fprintf(fp, "and (ha1cry%d[%d], hares%d[%d], facry%d[%d]);\n", instNo, fm, instNo, fm, instNo, fm);
+      fprintf(fp, "or (facry%d[%d], ha0cry%d[%d], ha1cry%d[%d]);\n", instNo, fm+1, instNo, fm, instNo, fm);
+    }
+  }
+  else
+  {
+    fprintf(fp, "wire hares%d, haresnot%d, in0not%d, ha0cry%d, ha1cry%d;\n", instNo, instNo, instNo, instNo, instNo);
+    fprintf(fp, "xor (hares%d, %s, %s);\n", instNo, in0PiName, in1PiName);
+    fprintf(fp, "and (ha0cry%d, %s, %s);\n", instNo, in0PiName, in1PiName);
+    fprintf(fp, "xor (%s, hares%d, facry%d[0]);\n", outPiName, instNo, instNo);
+    fprintf(fp, "and (ha1cry%d, hares%d, facry%d[0]);\n", instNo, instNo, instNo);
+    fprintf(fp, "or (facry%d[1], ha0cry%d, ha1cry%d);\n", instNo, instNo, instNo);
+  }
+  fprintf(fp, "// adr ends line no %d\n", liNo);
+}
+
 void writeInstanceSubtract(ivl_lpm_t subtrLpm, int instNo)
 {
   FILE *fp = openLogFile();

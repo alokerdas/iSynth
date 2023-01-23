@@ -15,11 +15,11 @@ output  c;
 output [3:0] s;
 assign _ivl_10 = 0;
 assign _ivl_6 = 0;
-buf (c, _ivl_11[4])
-buf (s[0], _ivl_11[0])
-buf (s[1], _ivl_11[1])
-buf (s[2], _ivl_11[2])
-buf (s[3], _ivl_11[3])
+buf (c, _ivl_11[4]);
+buf (s[0], _ivl_11[0]);
+buf (s[1], _ivl_11[1]);
+buf (s[2], _ivl_11[2]);
+buf (s[3], _ivl_11[3]);
 // concat starts line no 5
 buf (_ivl_3[0], a[0]);
 buf (_ivl_3[1], a[1]);
