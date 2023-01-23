@@ -1,0 +1,17 @@
+module test (
+o,
+a,
+b,
+);
+input [1:0] a;
+input [1:0] b;
+output  o;
+// cmpeq starts line no 4
+wire [1:0] cmpeqwire0;
+wire [0:0] reorwire0;
+xor (cmpeqwire0[0], a[0], b[0]);
+xor (cmpeqwire0[1], a[1], b[1]);
+or (reorwire0[0], cmpeqwire0[1], cmpeqwire0[0]);
+not (o, reorwire0[0]);
+// cmpeq ends line no 4
+endmodule

@@ -155,7 +155,7 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
           {
             const char *constBits = ivl_const_bits(aConst);
             if (pinSigName)
-              fprintf(fp, "assign %s = %s;\n", pinSigName, constBits);
+              fprintf(fp, "ddassign %s = %s;\n", pinSigName, constBits);
           }
         }
       }
@@ -568,7 +568,6 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
       break;
       case IVL_LPM_CMP_EQ:
         writeInstanceCmpeq(anLpm, k);
-        //fprintf(fp, "ivl_cmpeq #(%d) cmpeq%d (%s", lpmWidth, k, outPiName);
       break;
       case IVL_LPM_CMP_GE:
         fprintf(fp, "ivl_cmpge #(%d) cmpge%d (%s", lpmWidth, k, outPiName);
@@ -577,7 +576,7 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
         fprintf(fp, "ivl_cmpgt #(%d) cmpgt%d (%s", lpmWidth, k, outPiName);
       break;
       case IVL_LPM_CMP_NE:
-        fprintf(fp, "ivl_cmpne #(%d) cmpne%d (%s", lpmWidth, k, outPiName);
+        writeInstanceCmpeq(anLpm, k, false);
       break;
       case IVL_LPM_CMP_NEE:
         fprintf(fp, "ivl_cmpnee #(%d) cmpnee%d (%s", lpmWidth, k, outPiName);
@@ -693,6 +692,7 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
         (ivl_lpm_type(anLpm) != IVL_LPM_RE_OR) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_RE_NOR) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_CMP_EQ) &&
+        (ivl_lpm_type(anLpm) != IVL_LPM_CMP_NE) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_PART_VP) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_CONCAT))
     {

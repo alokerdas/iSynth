@@ -498,7 +498,7 @@ void writeInstanceSubtract(ivl_lpm_t subtrLpm, int instNo)
   fprintf(fp, "// subtr ends line no %d\n", liNo);
 }
 
-void writeInstanceCmpeq(ivl_lpm_t cmpeqLpm, int instNo)
+void writeInstanceCmpeq(ivl_lpm_t cmpeqLpm, int instNo, bool isEQ)
 {
   FILE *fp = openLogFile();
   const char *outPiName = NULL;
@@ -540,46 +540,46 @@ void writeInstanceCmpeq(ivl_lpm_t cmpeqLpm, int instNo)
   }
   if (lpmWidth > 1)
   {
-    fprintf(fp, "// cmpeq starts line no %d\n", liNo);
+    if (isEQ)
+      fprintf(fp, "// cmpeq starts line no %d\n", liNo);
+    else
+      fprintf(fp, "// cmpneq starts line no %d\n", liNo);
+
     fprintf(fp, "wire [%d:0] %s%d;\n", lpmWidth-1, wireName, instNo);
+    fprintf(fp, "wire [%d:0] %s%d;\n", lpmWidth-2, wireReorName, instNo);
     for (int fm = 0; fm < lpmWidth; fm++)
     {
       fprintf(fp, "xor (%s%d[%d], %s[%d], %s[%d]);\n", wireName, instNo, fm, in0PiName, fm, in1PiName, fm);
     }
 
-    if (lpmWidth == 2)
+    for (int fm = 0; fm < lpmWidth-1; fm++)
     {
-      fprintf(fp, "nor (%s, %s%d[1], %s%d[0]);\n", outPiName, wireName, instNo, wireName, instNo);
+      if (fm)
+      {
+        fprintf(fp, "or (%s%d[%d], %s%d[%d], %s%d[%d]);\n", wireReorName, instNo, fm, wireName, instNo, fm+1, wireReorName, instNo, fm-1);
+      }
+      else
+      {
+        fprintf(fp, "or (%s%d[0], %s%d[1], %s%d[0]);\n", wireReorName, instNo, wireName, instNo, wireName, instNo);
+      }
     }
-    else if (lpmWidth == 3)
+    if (isEQ)
     {
-      fprintf(fp, "wire %s%d;\n", wireReorName, instNo);
-      fprintf(fp, "or (%s%d, %s%d[1], %s%d[0]);\n", wireReorName, instNo, wireName, instNo, wireName, instNo);
-      fprintf(fp, "nor (%s, %s%d[2], %s%d);\n", outPiName, wireName, instNo, wireReorName, instNo);
+      fprintf(fp, "not (%s, %s%d[%d]);\n", outPiName, wireReorName, instNo, lpmWidth-2);
+      fprintf(fp, "// cmpeq ends line no %d\n", liNo);
     }
     else
     {
-      fprintf(fp, "wire [%d:0] %s%d;\n", lpmWidth-3, wireReorName, instNo);
-      for (int fm = 0; fm < lpmWidth - 1; fm++)
-      {
-        if (fm)
-        {
-          if (fm == (lpmWidth - 2))
-            fprintf(fp, "nor (%s, %s%d[%d], %s%d[%d]);\n", outPiName, wireName, instNo, fm+1, wireReorName, instNo, fm-1);
-          else
-            fprintf(fp, "or (%s%d[%d], %s%d[%d], %s%d[%d]);\n", wireReorName, instNo, fm, wireName, instNo, fm+1, wireReorName, instNo, fm-1);
-        }
-        else
-        {
-          fprintf(fp, "or (%s%d[0], %s%d[1], %s%d[0]);\n", wireReorName, instNo, wireName, instNo, wireName, instNo);
-        }
-      }
+      fprintf(fp, "buf (%s, %s%d[%d]);\n", outPiName, wireReorName, instNo, lpmWidth-2);
+      fprintf(fp, "// cmpneq ends line no %d\n", liNo);
     }
-    fprintf(fp, "// cmpeq ends line no %d\n", liNo);
   }
   else
   {
-    fprintf(fp, "xnor (%s, %s, %s); // cmpeq at line no %d\n", outPiName, in0PiName, in1PiName, liNo);
+    if (isEQ)
+      fprintf(fp, "xnor (%s, %s, %s); // cmpeq at line no %d\n", outPiName, in0PiName, in1PiName, liNo);
+    else
+      fprintf(fp, "xor (%s, %s, %s); // cmpneq at line no %d\n", outPiName, in0PiName, in1PiName, liNo);
   }
 }
 
