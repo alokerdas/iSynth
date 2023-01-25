@@ -1,0 +1,10 @@
+module test (
+o,
+a,
+b,
+);
+input [1:0] a;
+input [1:0] b;
+output  o;
+// ivl_cmpwne #(2) cmpwne0 (o); // line no 4
+endmodule

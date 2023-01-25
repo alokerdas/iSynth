@@ -34,6 +34,7 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
   FILE *fp = openLogFile();
   set<string> ffNames;
   int writeMux = 0;
+  int writeLatch = 0;
 
 
 //  int timUnit = ivl_scope_time_units(scope);
@@ -154,8 +155,9 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
           if (aConst)
           {
             const char *constBits = ivl_const_bits(aConst);
+            int bitLen = strlen(constBits);
             if (pinSigName)
-              fprintf(fp, "ddassign %s = %s;\n", pinSigName, constBits);
+              fprintf(fp, "assign %s = %d'b%s;\n", pinSigName, bitLen, constBits);
           }
         }
       }
@@ -320,17 +322,22 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
         pinSig = ivl_nexus_ptr_sig(aConn);
         if (pinSig)
         {
+          int bitLen = ivl_signal_width(pinSig);
           const char *pinSigName = ivl_signal_basename(pinSig);
           fprintf(fp, "%s", pinSigName);
           if (ivl_logic_type(aGate) == IVL_LO_PULLUP)
           {
 //          pullupSigName = ivl_signal_basename(pinSig);
-            fprintf(fp, ", 1'b1");
+            fprintf(fp, ", %d'b", bitLen);
+            for (int k = 0; k < bitLen; k++)
+              fprintf(fp, "1");
           }
           if (ivl_logic_type(aGate) == IVL_LO_PULLDOWN)
           {
 //          pulldnSigName = ivl_signal_basename(pinSig);
-            fprintf(fp, ", 1'b0");
+            fprintf(fp, ", %d'b", bitLen);
+            for (int k = 0; k < bitLen; k++)
+              fprintf(fp, "0");
           }
         }
       }
@@ -552,19 +559,25 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
         fprintf(fp, "// ivl_concatz #(%d) concatz%d (%s", lpmWidth, k, outPiName);
       break;
       case IVL_LPM_CMP_EEQ:
-        fprintf(fp, "ivl_cmpeeq #(%d) cmpeeq%d (%s", lpmWidth, k, outPiName);
+        fprintf(fp, "// ivl_cmpeeq #(%d) cmpeeq%d (%s", lpmWidth, k, outPiName);
       break;
       case IVL_LPM_CMP_EQX:
-        fprintf(fp, "ivl_cmpeqx #(%d) cmpeqx%d (%s", lpmWidth, k, outPiName);
+        fprintf(fp, "// ivl_cmpeqx #(%d) cmpeqx%d (%s", lpmWidth, k, outPiName);
       break;
       case IVL_LPM_CMP_EQZ:
-        fprintf(fp, "ivl_cmpeqz #(%d) cmpeqz%d (%s", lpmWidth, k, outPiName);
+        fprintf(fp, "// ivl_cmpeqz #(%d) cmpeqz%d (%s", lpmWidth, k, outPiName);
       break;
       case IVL_LPM_CMP_WEQ:
-        fprintf(fp, "ivl_cmpweq #(%d) cmpweq%d (%s", lpmWidth, k, outPiName);
+      {
+        fprintf(fp, "// ivl_cmpweq #(%d) cmpweq%d (%s", lpmWidth, k, outPiName);
+        fprintf(fp, "); // line no %d\n", liNo);
+      }
       break;
       case IVL_LPM_CMP_WNE:
-        fprintf(fp, "ivl_cmpwne #(%d) cmpwne%d (%s", lpmWidth, k, outPiName);
+      {
+        fprintf(fp, "// ivl_cmpwne #(%d) cmpwne%d (%s", lpmWidth, k, outPiName);
+        fprintf(fp, "); // line no %d\n", liNo);
+      }
       break;
       case IVL_LPM_CMP_EQ:
         writeInstanceCmpeq(anLpm, k);
@@ -579,7 +592,7 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
         writeInstanceCmpeq(anLpm, k, false);
       break;
       case IVL_LPM_CMP_NEE:
-        fprintf(fp, "ivl_cmpnee #(%d) cmpnee%d (%s", lpmWidth, k, outPiName);
+        fprintf(fp, "// ivl_cmpnee #(%d) cmpnee%d (%s", lpmWidth, k, outPiName);
       break;
       case IVL_LPM_DIVIDE:
         fprintf(fp, "ivl_devide #(%d) divide%d (%s", lpmWidth, k, outPiName);
@@ -591,7 +604,10 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
       }
       break;
       case IVL_LPM_LATCH:
-        fprintf(fp, "ivl_dlat #(%d) dlat%d (%s", lpmWidth, k, outPiName);
+      {
+        writeLatch = 1;
+	writeInstanceLatch(anLpm, k);
+      }
       break;
       case IVL_LPM_MOD:
         fprintf(fp, "ivl_mod #(%d) mod%d (%s", lpmWidth, k, outPiName);
@@ -683,16 +699,20 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
       break;
       default:
         fprintf(fp, "unknown\n");
+        printf("unknown\n");
       break;
     }
     if ((ivl_lpm_type(anLpm) != IVL_LPM_FF) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_MUX) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_ADD) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_SUB) &&
+        (ivl_lpm_type(anLpm) != IVL_LPM_LATCH) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_RE_OR) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_RE_NOR) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_CMP_EQ) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_CMP_NE) &&
+        (ivl_lpm_type(anLpm) != IVL_LPM_CMP_WNE) &&
+        (ivl_lpm_type(anLpm) != IVL_LPM_CMP_WEQ) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_PART_VP) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_CONCAT))
     {
@@ -796,6 +816,8 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
     writeModuleFF(*itr);
   if (writeMux)
     writeModuleMux();
+  if (writeLatch)
+    writeModuleLatch();
   return 0;
 }
 

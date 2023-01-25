@@ -1,0 +1,10 @@
+module test (
+o,
+a,
+b,
+);
+input [1:0] a;
+input [1:0] b;
+output  o;
+// ivl_cmpeeq #(2) cmpeeq0 (o, a, b); // line no 4
+endmodule

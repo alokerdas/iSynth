@@ -24,6 +24,7 @@ string writeInstanceFF(ivl_lpm_t ffLpm, int instNo)
 {
   FILE *fp = openLogFile();
   const char *outPiName = NULL;
+  string otherInputs;
   string ffName = "dff";
   unsigned liNo = ivl_lpm_lineno(ffLpm);
   unsigned lpmWidth = ivl_lpm_width(ffLpm);
@@ -38,6 +39,19 @@ string writeInstanceFF(ivl_lpm_t ffLpm, int instNo)
       outPiName = ivl_signal_basename(pinSig);
     }
   }
+  const char *piName = NULL;
+  ivl_nexus_t inpJoint = ivl_lpm_data(ffLpm, 0);
+  connections = inpJoint? ivl_nexus_ptrs(inpJoint) : 0;
+  for (int j = 0; j < connections; j++)
+  {
+    ivl_nexus_ptr_t aConn = ivl_nexus_ptr(inpJoint, j);
+    ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
+    if (pinSig)
+    {
+      piName = ivl_signal_basename(pinSig);
+      break;
+    }
+  }
   const char *clkName = NULL;
   ivl_nexus_t clkJoint = ivl_lpm_clk(ffLpm);
   connections = ivl_nexus_ptrs(clkJoint);
@@ -48,6 +62,19 @@ string writeInstanceFF(ivl_lpm_t ffLpm, int instNo)
     if (pinSig)
     {
       clkName = ivl_signal_basename(pinSig);
+      break;
+    }
+  }
+  const char *eName = NULL;
+  ivl_nexus_t enJoint = ivl_lpm_enable(ffLpm);
+  connections = enJoint? ivl_nexus_ptrs(enJoint) : 0;
+  for (int j = 0; j < connections; j++)
+  {
+    ivl_nexus_ptr_t aConn = ivl_nexus_ptr(enJoint, j);
+    ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
+    if (pinSig)
+    {
+      eName = ivl_signal_basename(pinSig);
       break;
     }
   }
@@ -77,8 +104,90 @@ string writeInstanceFF(ivl_lpm_t ffLpm, int instNo)
       break;
     }
   }
-  const char *enName = NULL;
-  ivl_nexus_t enJoint = ivl_lpm_enable(ffLpm);
+  if (clkName)
+    otherInputs = clkName;
+  if (ivl_lpm_negedge(ffLpm))
+    ffName += "n";
+  else
+    ffName += "p";
+
+  if (eName)
+  {
+    ffName += "e";
+    otherInputs += eName;
+  }
+  if (rstName)
+  {
+    ffName += "r";
+    otherInputs += rstName;
+  }
+  if (setName)
+  {
+    ffName += "s";
+    otherInputs += setName;
+  }
+
+  if (lpmWidth > 1)
+  {
+    fprintf(fp, "// dff starts line no %d\n", liNo);
+    for (int ff = 0; ff < lpmWidth; ff++)
+    {
+      fprintf(fp, "ivl_%s dff%d%d (", ffName.data(), instNo, ff);
+      if (outPiName)
+        fprintf(fp, "%s[%d]", outPiName, ff);
+      if (piName)
+        fprintf(fp, ", %s[%d]", piName, ff);
+      if (!otherInputs.empty())
+        fprintf(fp, ", %s);\n", otherInputs.data());
+    }
+    fprintf(fp, "// dff ends line no %d\n", liNo);
+  }
+  else
+  {
+    fprintf(fp, "ivl_%s dff%d (", ffName.data(), instNo);
+    if (outPiName)
+      fprintf(fp, "%s", outPiName);
+    if (piName)
+      fprintf(fp, ", %s", piName);
+    if (!otherInputs.empty())
+        fprintf(fp, ", %s);\n", otherInputs.data());
+    fprintf(fp, "); // line no %d\n", liNo);
+  }
+  return ffName;
+}
+
+void writeInstanceLatch(ivl_lpm_t latLpm, int instNo)
+{
+  FILE *fp = openLogFile();
+  const char *outPiName = NULL;
+  unsigned liNo = ivl_lpm_lineno(latLpm);
+  unsigned lpmWidth = ivl_lpm_width(latLpm);
+  ivl_nexus_t outJoint = ivl_lpm_q(latLpm);
+  unsigned connections = ivl_nexus_ptrs(outJoint);
+  for (int j = 0; j < connections; j++)
+  {
+    ivl_nexus_ptr_t aConn = ivl_nexus_ptr(outJoint, j);
+    ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
+    if (pinSig)
+    {
+      outPiName = ivl_signal_basename(pinSig);
+    }
+  }
+  const char *iName = NULL;
+  ivl_nexus_t inpJoint = ivl_lpm_data(latLpm, 0);
+  connections = inpJoint? ivl_nexus_ptrs(inpJoint) : 0;
+  for (int j = 0; j < connections; j++)
+  {
+    ivl_nexus_ptr_t aConn = ivl_nexus_ptr(inpJoint, j);
+    ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
+    if (pinSig)
+    {
+      iName = ivl_signal_basename(pinSig);
+      break;
+    }
+  }
+  const char *eName = NULL;
+  ivl_nexus_t enJoint = ivl_lpm_enable(latLpm);
   connections = enJoint? ivl_nexus_ptrs(enJoint) : 0;
   for (int j = 0; j < connections; j++)
   {
@@ -86,63 +195,35 @@ string writeInstanceFF(ivl_lpm_t ffLpm, int instNo)
     ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
     if (pinSig)
     {
-      enName = ivl_signal_basename(pinSig);
+      eName = ivl_signal_basename(pinSig);
       break;
     }
   }
-
-  if (ivl_lpm_negedge(ffLpm))
-    ffName += "n";
-  else
-    ffName += "p";
-
-  if (setName)
-    ffName += "s";
-  if (rstName)
-    ffName += "r";
-  if (enName)
-    ffName += "e";
-
-  for (int ff = 0; ff < lpmWidth; ff++)
+  if (lpmWidth > 1)
   {
-    if (lpmWidth > 1)
-      fprintf(fp, "ivl_%s dff%d%d (%s[%d]", ffName.data(), instNo, ff, outPiName, ff);
-    else
-      fprintf(fp, "ivl_%s dff%d (%s", ffName.data(), instNo, outPiName);
-
-    if (clkName)
-      fprintf(fp, ", %s", clkName);
-    if (setName)
-      fprintf(fp, ", %s", setName);
-    if (rstName)
-      fprintf(fp, ", %s", rstName);
-    if (enName)
-      fprintf(fp, ", %s", enName);
-
-    unsigned inps = ivl_lpm_size(ffLpm);
-    for (int i = 0; i < inps; i++)
+    fprintf(fp, "// latch starts line no %d\n", liNo);
+    for (int ff = 0; ff < lpmWidth; ff++)
     {
-      ivl_nexus_t inpJoint = ivl_lpm_data(ffLpm, i);
-      connections = inpJoint? ivl_nexus_ptrs(inpJoint) : 0;
-      for (int j = 0; j < connections; j++)
-      {
-        ivl_nexus_ptr_t aConn = ivl_nexus_ptr(inpJoint, j);
-        ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
-        if (pinSig)
-        {
-          const char *piName = ivl_signal_basename(pinSig);
-          if (lpmWidth > 1)
-            fprintf(fp, ", %s[%d]", piName, ff);
-          else
-            fprintf(fp, ", %s", piName);
-
-          break;
-        }
-      }
+      if (outPiName)
+        fprintf(fp, "ivl_dlat dlat%d%d (%s[%d]", instNo, ff, outPiName, ff);
+      if (iName)
+        fprintf(fp, ", %s[%d]", iName, ff);
+      if (eName)
+        fprintf(fp, ", %s", eName);
+      fprintf(fp, ");\n");
     }
+    fprintf(fp, "// latch ends line no %d\n", liNo);
+  }
+  else
+  {
+    if (outPiName)
+      fprintf(fp, "ivl_dlat dlat%d (%s", instNo, outPiName);
+    if (iName)
+      fprintf(fp, ", %s", iName);
+    if (eName)
+      fprintf(fp, ", %s", eName);
     fprintf(fp, "); // line no %d\n", liNo);
   }
-  return ffName;
 }
 
 void writeInstanceMux(ivl_lpm_t muxLpm, int instNo)
@@ -151,6 +232,7 @@ void writeInstanceMux(ivl_lpm_t muxLpm, int instNo)
   const char *outPiName = NULL;
   unsigned liNo = ivl_lpm_lineno(muxLpm);
   unsigned lpmWidth = ivl_lpm_width(muxLpm);
+  unsigned inps = ivl_lpm_size(muxLpm);
   ivl_nexus_t outJoint = ivl_lpm_q(muxLpm);
   unsigned connections = ivl_nexus_ptrs(outJoint);
   for (int j = 0; j < connections; j++)
@@ -175,17 +257,39 @@ void writeInstanceMux(ivl_lpm_t muxLpm, int instNo)
       break;
     }
   }
-  for (int fm = 0; fm < lpmWidth; fm++)
+  if (lpmWidth > 1)
   {
-    if (lpmWidth > 1)
-      fprintf(fp, "ivl_mux mux%d%d (%s[%d]", instNo, fm, outPiName, fm);
-    else
+    fprintf(fp, "// mux starts line no %d\n", liNo);
+    for (int fm = 0; fm < lpmWidth; fm++)
+    {
+      if (outPiName)
+        fprintf(fp, "ivl_mux mux%d%d (%s[%d]", instNo, fm, outPiName, fm);
+      for (int i = 0; i < inps; i++)
+      {
+        ivl_nexus_t inpJoint = ivl_lpm_data(muxLpm, i);
+        connections = inpJoint? ivl_nexus_ptrs(inpJoint) : 0;
+        for (int j = 0; j < connections; j++)
+        {
+          ivl_nexus_ptr_t aConn = ivl_nexus_ptr(inpJoint, j);
+          ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
+          if (pinSig)
+          {
+            const char *piName = ivl_signal_basename(pinSig);
+            fprintf(fp, ", %s[%d]", piName, fm);
+            break;
+          }
+        }
+      }
+      if (selName)
+        fprintf(fp, ", %s", selName);
+      fprintf(fp, ");\n");
+    }
+    fprintf(fp, "// mux ends line no %d\n", liNo);
+  }
+  else
+  {
+    if (outPiName)
       fprintf(fp, "ivl_mux mux%d (%s", instNo, outPiName);
-
-    if (selName)
-      fprintf(fp, ", %s", selName);
-
-    unsigned inps = ivl_lpm_size(muxLpm);
     for (int i = 0; i < inps; i++)
     {
       ivl_nexus_t inpJoint = ivl_lpm_data(muxLpm, i);
@@ -197,15 +301,13 @@ void writeInstanceMux(ivl_lpm_t muxLpm, int instNo)
         if (pinSig)
         {
           const char *piName = ivl_signal_basename(pinSig);
-          if (lpmWidth > 1)
-            fprintf(fp, ", %s[%d]", piName, fm);
-          else
-            fprintf(fp, ", %s", piName);
-
+          fprintf(fp, ", %s", piName);
           break;
         }
       }
     }
+    if (selName)
+      fprintf(fp, ", %s", selName);
     fprintf(fp, "); // line no %d\n", liNo);
   }
 }
@@ -586,9 +688,9 @@ void writeInstanceCmpeq(ivl_lpm_t cmpeqLpm, int instNo, bool isEQ)
 void writeModuleMux()
 {
   FILE *fp = openLogFile();
-  fprintf(fp, "module ivl_mux (out, select, in0, in1);\n");
+  fprintf(fp, "module ivl_mux (out, in0, in1, select);\n");
   fprintf(fp, "  output out;\n");
-  fprintf(fp, "  input in1, in0, select;\n");
+  fprintf(fp, "  input in0, in1, select;\n");
   fprintf(fp, "  assign out = select ? in1 : in0;\n");
   fprintf(fp, "endmodule\n");
 }
@@ -652,5 +754,19 @@ void writeModuleFF(string ffname)
       fprintf(fp, "    else\n");
   }
   fprintf(fp, "      out <= in;\n");
+  fprintf(fp, "endmodule\n");
+}
+
+void writeModuleLatch()
+{
+  FILE *fp = openLogFile();
+  int presentSR = 0;
+  fprintf(fp, "module ivl_dlat (out, in, clock);\n");
+  fprintf(fp, "  output out;\n");
+  fprintf(fp, "  reg out;\n");
+  fprintf(fp, "  input in, clock;\n");
+  fprintf(fp, "  always @*\n");
+  fprintf(fp, "    if (clock)\n");
+  fprintf(fp, "      out = in;\n");
   fprintf(fp, "endmodule\n");
 }
