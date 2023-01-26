@@ -164,8 +164,6 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
     }
   }
 
-//  const char *pullupSigName = NULL;
-//  const char *pulldnSigName = NULL;
   unsigned logics = ivl_scope_logs(scope);
   for (int j  = 0; j < logics; j++)
   {
@@ -173,191 +171,114 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
     unsigned nGates = ivl_logic_width(aGate);
     for (int gateBit = 0; gateBit < nGates; gateBit++)
     {
-    switch (ivl_logic_type(aGate))
-    {
-      case IVL_LO_BUF:
-        fprintf(fp, "buf (");
-      break;
-      case IVL_LO_BUFIF0:
-        fprintf(fp, "bufif0 (");
-      break;
-      case IVL_LO_BUFIF1:
-        fprintf(fp, "bufif1 (");
-      break;
-      case IVL_LO_BUFT:
-        fprintf(fp, "buft (");
-      break;
-      case IVL_LO_BUFZ:
-        fprintf(fp, "buf (");
-      break;
-      case IVL_LO_NOT:
-        fprintf(fp, "not (");
-      break;
-      case IVL_LO_NOTIF0:
-        fprintf(fp, "notif0 (");
-      break;
-      case IVL_LO_NOTIF1:
-        fprintf(fp, "notif1 (");
-      break;
-      case IVL_LO_AND:
-        fprintf(fp, "and (");
-      break;
-      case IVL_LO_NAND:
-        fprintf(fp, "nand (");
-      break;
-      case IVL_LO_OR:
-        fprintf(fp, "or (");
-      break;
-      case IVL_LO_NOR:
-        fprintf(fp, "nor (");
-      break;
-      case IVL_LO_XOR:
-        fprintf(fp, "xor (");
-      break;
-      case IVL_LO_XNOR:
-        fprintf(fp, "xnor (");
-      break;
-      case IVL_LO_PULLUP:
-        fprintf(fp, "pullup (");
-      break;
-      case IVL_LO_PULLDOWN:
-        fprintf(fp, "pulldown (");
-      break;
-      case IVL_LO_CMOS:
-        fprintf(fp, "cmos (");
-      break;
-      case IVL_LO_NMOS:
-        fprintf(fp, "nmos (");
-      break;
-      case IVL_LO_PMOS:
-        fprintf(fp, "pmos (");
-      break;
-      case IVL_LO_RCMOS:
-        fprintf(fp, "rcmos (");
-      break;
-      case IVL_LO_RNMOS:
-        fprintf(fp, "rnmos (");
-      break;
-      case IVL_LO_RPMOS:
-        fprintf(fp, "rpmos (");
-      break;
-      case IVL_LO_IMPL:
-      break;
-      case IVL_LO_EQUIV:
-      break;
-      case IVL_LO_UDP:
+      switch (ivl_logic_type(aGate))
       {
-        ivl_udp_t aUdp = ivl_logic_udp(aGate);
-        const char *udpName = ivl_udp_name(aUdp);
-        fprintf(fp, "%s (", udpName);
+        case IVL_LO_BUF:
+          fprintf(fp, "buf (");
+        break;
+        case IVL_LO_BUFIF0:
+          fprintf(fp, "bufif0 (");
+        break;
+        case IVL_LO_BUFIF1:
+          fprintf(fp, "bufif1 (");
+        break;
+        case IVL_LO_BUFT:
+          fprintf(fp, "buft (");
+        break;
+        case IVL_LO_BUFZ:
+          fprintf(fp, "buf (");
+        break;
+        case IVL_LO_NOT:
+          fprintf(fp, "not (");
+        break;
+        case IVL_LO_NOTIF0:
+          fprintf(fp, "notif0 (");
+        break;
+        case IVL_LO_NOTIF1:
+          fprintf(fp, "notif1 (");
+        break;
+        case IVL_LO_AND:
+          fprintf(fp, "and (");
+        break;
+        case IVL_LO_NAND:
+          fprintf(fp, "nand (");
+        break;
+        case IVL_LO_OR:
+          fprintf(fp, "or (");
+        break;
+        case IVL_LO_NOR:
+          fprintf(fp, "nor (");
+        break;
+        case IVL_LO_XOR:
+          fprintf(fp, "xor (");
+        break;
+        case IVL_LO_XNOR:
+          fprintf(fp, "xnor (");
+        break;
+        case IVL_LO_PULLUP:
+          fprintf(fp, "pullup (");
+        break;
+        case IVL_LO_PULLDOWN:
+          fprintf(fp, "pulldown (");
+        break;
+        case IVL_LO_CMOS:
+          fprintf(fp, "cmos (");
+        break;
+        case IVL_LO_NMOS:
+          fprintf(fp, "nmos (");
+        break;
+        case IVL_LO_PMOS:
+          fprintf(fp, "pmos (");
+        break;
+        case IVL_LO_RCMOS:
+          fprintf(fp, "rcmos (");
+        break;
+        case IVL_LO_RNMOS:
+          fprintf(fp, "rnmos (");
+        break;
+        case IVL_LO_RPMOS:
+          fprintf(fp, "rpmos (");
+        break;
+        case IVL_LO_IMPL:
+        break;
+        case IVL_LO_EQUIV:
+        break;
+        case IVL_LO_UDP:
+        {
+          ivl_udp_t aUdp = ivl_logic_udp(aGate);
+          const char *udpName = ivl_udp_name(aUdp);
+          fprintf(fp, "%s (", udpName);
+        }
+        break;
+        default:
+          fprintf(fp, "unknown\n");
+        break;
       }
-      break;
-      default:
-        fprintf(fp, "unknown\n");
-      break;
-    }
-    unsigned pins = ivl_logic_pins(aGate);
-    for (int i = 0; i < pins; i++)
-    {
-      ivl_signal_t pinSig = NULL;
-      if (i)
-        fprintf(fp, ", ");
+      unsigned pins = ivl_logic_pins(aGate);
+      for (int i = 0; i < pins; i++)
+      {
+        ivl_signal_t pinSig = NULL;
+        if (i)
+          fprintf(fp, ", ");
 
-      ivl_nexus_t aPinJoint = ivl_logic_pin(aGate, i);
-      unsigned connections = aPinJoint ? ivl_nexus_ptrs(aPinJoint) : 0;
-      for (int j = 0; j < connections; j++)
-      {
-        ivl_nexus_ptr_t aConn = ivl_nexus_ptr(aPinJoint, j);
-	ivl_lpm_t pinLpm = ivl_nexus_ptr_lpm(aConn);
-	if (pinLpm)
-	{
-          if (ivl_lpm_type(pinLpm) == IVL_LPM_PART_VP)
-	  {
-            unsigned vpBase = ivl_lpm_base(pinLpm);
-            unsigned vpWidth = ivl_lpm_width(pinLpm);
-            ivl_nexus_t inJoint = ivl_lpm_data(pinLpm, 0);
-            unsigned connections = ivl_nexus_ptrs(inJoint);
-            for (int j = 0; j < connections; j++)
-            {
-              ivl_nexus_ptr_t aConn = ivl_nexus_ptr(inJoint, j);
-              pinSig = ivl_nexus_ptr_sig(aConn);
-              if (pinSig)
-	      {
-                const char *pinSigName = ivl_signal_basename(pinSig);
-                fprintf(fp, "%s", pinSigName);
-                if (vpWidth > 1)
-                  fprintf(fp, "[%d:%d]", vpBase, vpBase+vpWidth);
-                else
-                  fprintf(fp, "[%d]", vpBase);
-                break;
-	      }
-	    }
-	  }
-          if (ivl_lpm_type(pinLpm) == IVL_LPM_CONCATZ)
-	  {
-            for (int sj = 0; sj < ivl_lpm_size(pinLpm); sj++)
-            {
-              ivl_nexus_t concatInJoint = ivl_lpm_data(pinLpm, sj);
-	      if (concatInJoint == aPinJoint)
-	      {
-                ivl_nexus_t concatOutJoint = ivl_lpm_q(pinLpm);
-                unsigned concatOutConnections = ivl_nexus_ptrs(aPinJoint);
-                for (int tt = 0; tt < concatOutConnections; tt++)
-                {
-                  ivl_nexus_ptr_t aConn = ivl_nexus_ptr(concatOutJoint, tt);
-                  pinSig = ivl_nexus_ptr_sig(aConn);
-                  if (pinSig && !ivl_signal_local(pinSig) &&
-		      (ivl_signal_scope(pinSig) == ivl_scope_parent(ivl_logic_scope(aGate))))
-                  {
-                    const char *pinSigName = ivl_signal_basename(pinSig);
-                    fprintf(fp, "%s[%d]", pinSigName, sj);
-		    break;
-                  }
-                }
-	      }
-	    }
-          }
-        }
-        pinSig = ivl_nexus_ptr_sig(aConn);
-        if (pinSig)
+        ivl_nexus_t aPinJoint = ivl_logic_pin(aGate, i);
+        unsigned connections = aPinJoint ? ivl_nexus_ptrs(aPinJoint) : 0;
+        for (int j = 0; j < connections; j++)
         {
-          int bitLen = ivl_signal_width(pinSig);
-          const char *pinSigName = ivl_signal_basename(pinSig);
-          if (nGates > 1)
-            fprintf(fp, "%s[%d]", pinSigName, gateBit);
-          else
-            fprintf(fp, "%s", pinSigName);
-        }
-/*
-      }
-      if (!pinSig)
-      {
-        ivl_nexus_ptr_t aConn = ivl_nexus_ptr(aPinJoint, 0);
-        pinSig = ivl_nexus_ptr_sig(aConn);
-        if (pinSig)
-        {
-          int bitLen = ivl_signal_width(pinSig);
-          const char *pinSigName = ivl_signal_basename(pinSig);
-          fprintf(fp, "%s", pinSigName);
-          if (ivl_logic_type(aGate) == IVL_LO_PULLUP)
+          ivl_nexus_ptr_t aConn = ivl_nexus_ptr(aPinJoint, j);
+          pinSig = ivl_nexus_ptr_sig(aConn);
+          if (pinSig)
           {
-//          pullupSigName = ivl_signal_basename(pinSig);
-            fprintf(fp, ", %d'b", bitLen);
-            for (int k = 0; k < bitLen; k++)
-              fprintf(fp, "1");
-          }
-          if (ivl_logic_type(aGate) == IVL_LO_PULLDOWN)
-          {
-//          pulldnSigName = ivl_signal_basename(pinSig);
-            fprintf(fp, ", %d'b", bitLen);
-            for (int k = 0; k < bitLen; k++)
-              fprintf(fp, "0");
+            int bitLen = ivl_signal_width(pinSig);
+            const char *pinSigName = ivl_signal_basename(pinSig);
+            if (nGates > 1)
+              fprintf(fp, "%s[%d]", pinSigName, gateBit);
+            else
+              fprintf(fp, "%s", pinSigName);
           }
         }
-*/
       }
-    }
-    fprintf(fp, ");\n");
+      fprintf(fp, ");\n");
     }
   }
 
@@ -365,124 +286,66 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
   for (int j  = 0; j < trans; j++)
   {
     ivl_switch_t aTran = ivl_scope_switch(scope, j);
-    switch (ivl_switch_type(aTran))
+    unsigned nTrans = ivl_switch_width(aTran);
+    for (int trnBit = 0; trnBit < nTrans; trnBit++)
     {
-      case IVL_SW_TRAN:
-        fprintf(fp, "tran (");
-      break;
-      case IVL_SW_TRANIF0:
-        fprintf(fp, "tranif0 (");
-      break;
-      case IVL_SW_TRANIF1:
-        fprintf(fp, "tranif1 (");
-      break;
-      case IVL_SW_RTRAN:
-        fprintf(fp, "rtran (");
-      break;
-      case IVL_SW_RTRANIF0:
-        fprintf(fp, "rtranif0 (");
-      break;
-      case IVL_SW_RTRANIF1:
-        fprintf(fp, "rtranif1 (");
-      break;
-      default:
-        fprintf(fp, "unknown\n");
-      break;
-    }
-
-    for (int i = 0; i < 3; i++)
-    {
-      ivl_signal_t pinSig = NULL;
-      ivl_nexus_t aPinJoint = NULL;
-      if (i)
+      switch (ivl_switch_type(aTran))
       {
-	if (i == 1)
-          aPinJoint = ivl_switch_b(aTran);
-	if (i == 2)
-          aPinJoint = ivl_switch_enable(aTran);
-	if (aPinJoint)
-         fprintf(fp, ", ");
-      }
-      else
-      {
-        aPinJoint = ivl_switch_a(aTran);
+        case IVL_SW_TRAN:
+          fprintf(fp, "tran (");
+        break;
+        case IVL_SW_TRANIF0:
+          fprintf(fp, "tranif0 (");
+        break;
+        case IVL_SW_TRANIF1:
+          fprintf(fp, "tranif1 (");
+        break;
+        case IVL_SW_RTRAN:
+          fprintf(fp, "rtran (");
+        break;
+        case IVL_SW_RTRANIF0:
+          fprintf(fp, "rtranif0 (");
+        break;
+        case IVL_SW_RTRANIF1:
+          fprintf(fp, "rtranif1 (");
+        break;
+        default:
+          fprintf(fp, "unknown\n");
+        break;
       }
 
-      unsigned connections = aPinJoint ? ivl_nexus_ptrs(aPinJoint) : 0;
-      for (int j = 0; j < connections; j++)
+      // a switch can have 3 inputs only
+      for (int i = 0; i < 3; i++)
       {
-        ivl_nexus_ptr_t aConn = ivl_nexus_ptr(aPinJoint, j);
-	ivl_lpm_t pinLpm = ivl_nexus_ptr_lpm(aConn);
-	if (pinLpm)
-	{
-          if (ivl_lpm_type(pinLpm) == IVL_LPM_PART_VP)
-	  {
-            unsigned vpBase = ivl_lpm_base(pinLpm);
-            unsigned vpWidth = ivl_lpm_width(pinLpm);
-            ivl_nexus_t inJoint = ivl_lpm_data(pinLpm, 0);
-            unsigned connections = inJoint ? ivl_nexus_ptrs(inJoint) : 0;
-            for (int j = 0; j < connections; j++)
-            {
-              ivl_nexus_ptr_t aConn = ivl_nexus_ptr(inJoint, j);
-              pinSig = ivl_nexus_ptr_sig(aConn);
-              if (pinSig)
-	      {
-                const char *pinSigName = ivl_signal_basename(pinSig);
-                fprintf(fp, "%s", pinSigName);
-                if (vpWidth > 1)
-                  fprintf(fp, "[%d:%d]", vpBase, vpBase+vpWidth);
-                else
-                  fprintf(fp, "[%d]", vpBase);
-                break;
-	      }
-	    }
-	  }
-          if (ivl_lpm_type(pinLpm) == IVL_LPM_CONCATZ)
-	  {
-            for (int sj = 0; sj < ivl_lpm_size(pinLpm); sj++)
-            {
-              ivl_nexus_t concatInJoint = ivl_lpm_data(pinLpm, sj);
-	      if (concatInJoint == aPinJoint)
-	      {
-                ivl_nexus_t concatOutJoint = ivl_lpm_q(pinLpm);
-                unsigned concatOutConnections = ivl_nexus_ptrs(aPinJoint);
-                for (int tt = 0; tt < concatOutConnections; tt++)
-                {
-                  ivl_nexus_ptr_t aConn = ivl_nexus_ptr(concatOutJoint, tt);
-                  pinSig = ivl_nexus_ptr_sig(aConn);
-                  if (pinSig && !ivl_signal_local(pinSig) &&
-		      (ivl_signal_scope(pinSig) == ivl_scope_parent(ivl_switch_scope(aTran))))
-                  {
-                    const char *pinSigName = ivl_signal_basename(pinSig);
-                    fprintf(fp, "%s[%d]", pinSigName, sj);
-		    break;
-                  }
-                }
-	      }
-	    }
-          }
-        }
-      }
-      if (!pinSig)
-      {
-        ivl_nexus_ptr_t aConn = aPinJoint ?  ivl_nexus_ptr(aPinJoint, 0) : 0;
-        pinSig = ivl_nexus_ptr_sig(aConn);
-        if (pinSig)
+        ivl_signal_t pinSig = NULL;
+        ivl_nexus_t aPinJoint = NULL;
+        if (i)
         {
-          const char *pinSigName = ivl_signal_basename(pinSig);
-          fprintf(fp, "%s", pinSigName);
-	  /*
-          if (ivl_switch_type(aTran) == IVL_LO_PULLUP)
+  	  if (i == 1)
+            aPinJoint = ivl_switch_b(aTran);
+  	  else
+            aPinJoint = ivl_switch_enable(aTran);
+  	  if (aPinJoint)
+            fprintf(fp, ", ");
+        }
+        else
+        {
+          aPinJoint = ivl_switch_a(aTran);
+        }
+
+        unsigned connections = aPinJoint ? ivl_nexus_ptrs(aPinJoint) : 0;
+        for (int j = 0; j < connections; j++)
+        {
+          ivl_nexus_ptr_t aConn = ivl_nexus_ptr(aPinJoint, j);
+          pinSig = ivl_nexus_ptr_sig(aConn);
+          if (pinSig)
           {
-//          pullupSigName = ivl_signal_basename(pinSig);
-            fprintf(fp, ", 1'b1");
+            const char *pinSigName = ivl_signal_basename(pinSig);
+            if (nTrans > 1)
+              fprintf(fp, "%s[%d]", pinSigName, trnBit);
+            else
+              fprintf(fp, "%s", pinSigName);
           }
-          if (ivl_switch_type(aTran) == IVL_LO_PULLDOWN)
-          {
-//          pulldnSigName = ivl_signal_basename(pinSig);
-            fprintf(fp, ", 1'b0");
-          }
-	  */
         }
       }
     }
