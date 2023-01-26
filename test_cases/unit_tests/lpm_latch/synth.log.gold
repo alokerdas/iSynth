@@ -8,8 +8,8 @@ wire  _LOGIC1;
 input  ck;
 input  d;
 output  q;
-buf (_LOGIC1, 1'b1);
-buf (_LOGIC0, 1'b0);
+pullup (_LOGIC1);
+pulldown (_LOGIC0);
 ivl_dlat dlat0 (q, d, ck); // line no 5
 endmodule
 module ivl_dlat (out, in, clock);

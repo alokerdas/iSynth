@@ -114,16 +114,19 @@ string writeInstanceFF(ivl_lpm_t ffLpm, int instNo)
   if (eName)
   {
     ffName += "e";
+    otherInputs += ", ";
     otherInputs += eName;
   }
   if (rstName)
   {
     ffName += "r";
+    otherInputs += ", ";
     otherInputs += rstName;
   }
   if (setName)
   {
     ffName += "s";
+    otherInputs += ", ";
     otherInputs += setName;
   }
 
@@ -150,7 +153,7 @@ string writeInstanceFF(ivl_lpm_t ffLpm, int instNo)
     if (piName)
       fprintf(fp, ", %s", piName);
     if (!otherInputs.empty())
-        fprintf(fp, ", %s);\n", otherInputs.data());
+        fprintf(fp, ", %s)", otherInputs.data());
     fprintf(fp, "); // line no %d\n", liNo);
   }
   return ffName;

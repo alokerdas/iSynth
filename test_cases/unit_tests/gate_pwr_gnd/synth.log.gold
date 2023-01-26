@@ -6,8 +6,8 @@ wire  _vdd;
 wire  _vss;
 output  a;
 output  o;
-buf (_vdd, 1'b1);
-buf (_vss, 1'b0);
+pullup (_vdd);
+pulldown (_vss);
 buf (o, _vdd);
 buf (a, _vss);
 endmodule

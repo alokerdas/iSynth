@@ -170,6 +170,9 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
   for (int j  = 0; j < logics; j++)
   {
     ivl_net_logic_t aGate = ivl_scope_log(scope, j);
+    unsigned nGates = ivl_logic_width(aGate);
+    for (int gateBit = 0; gateBit < nGates; gateBit++)
+    {
     switch (ivl_logic_type(aGate))
     {
       case IVL_LO_BUF:
@@ -215,10 +218,10 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
         fprintf(fp, "xnor (");
       break;
       case IVL_LO_PULLUP:
-        fprintf(fp, "buf (");
+        fprintf(fp, "pullup (");
       break;
       case IVL_LO_PULLDOWN:
-        fprintf(fp, "buf (");
+        fprintf(fp, "pulldown (");
       break;
       case IVL_LO_CMOS:
         fprintf(fp, "cmos (");
@@ -315,6 +318,17 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
 	    }
           }
         }
+        pinSig = ivl_nexus_ptr_sig(aConn);
+        if (pinSig)
+        {
+          int bitLen = ivl_signal_width(pinSig);
+          const char *pinSigName = ivl_signal_basename(pinSig);
+          if (nGates > 1)
+            fprintf(fp, "%s[%d]", pinSigName, gateBit);
+          else
+            fprintf(fp, "%s", pinSigName);
+        }
+/*
       }
       if (!pinSig)
       {
@@ -340,9 +354,11 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
               fprintf(fp, "0");
           }
         }
+*/
       }
     }
     fprintf(fp, ");\n");
+    }
   }
 
   unsigned trans = ivl_scope_switches(scope);

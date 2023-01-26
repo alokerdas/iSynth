@@ -10,11 +10,11 @@ input  ck;
 input  d;
 output  q;
 input  st;
-buf (_LOGIC1, 1'b1);
-buf (_LOGIC0, 1'b0);
-ivl_dffnse dff0 (q, ck, st, _LOGIC1, d); // line no 5
+pullup (_LOGIC1);
+pulldown (_LOGIC0);
+ivl_dffnes dff0 (q, d, ck, _LOGIC1, st)); // line no 5
 endmodule
-module ivl_dffnse (out, in, clock, enable, set);
+module ivl_dffnes (out, in, clock, enable, set);
   output out;
   reg out;
   input in, clock, enable, set;
