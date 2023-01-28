@@ -240,8 +240,13 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
           fprintf(fp, "rpmos (");
         break;
         case IVL_LO_IMPL:
+          fprintf(fp, "// impl (");
         break;
         case IVL_LO_EQUIV:
+          fprintf(fp, "// equiv (");
+        break;
+        case IVL_LO_NONE:
+          fprintf(fp, "// none (");
         break;
         case IVL_LO_UDP:
         {
@@ -293,6 +298,9 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
       {
         case IVL_SW_TRAN:
           fprintf(fp, "tran (");
+        break;
+        case IVL_SW_TRAN_VP:
+          fprintf(fp, "tranvp (");
         break;
         case IVL_SW_TRANIF0:
           fprintf(fp, "tranif0 (");
