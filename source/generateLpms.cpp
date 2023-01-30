@@ -315,15 +315,15 @@ void writeInstanceMux(ivl_lpm_t muxLpm, int instNo)
   }
 }
 
-void writeInstanceReor(ivl_lpm_t reorLpm, int instNo)
+void writeInstanceRe(ivl_lpm_t reLpm, const char *gatName, int instNo, bool isNOT)
 {
   FILE *fp = openLogFile();
   const char *outPiName = NULL;
-  const char *inPiName = NULL;
-  const char *wireName = "reorwire";
-  unsigned liNo = ivl_lpm_lineno(reorLpm);
-  unsigned lpmWidth = ivl_lpm_width(reorLpm);
-  ivl_nexus_t outJoint = ivl_lpm_q(reorLpm);
+  const char *piName = NULL;
+  const char *wireName = "rewire";
+  unsigned liNo = ivl_lpm_lineno(reLpm);
+  unsigned lpmWidth = ivl_lpm_width(reLpm);
+  ivl_nexus_t outJoint = ivl_lpm_q(reLpm);
   unsigned connections = ivl_nexus_ptrs(outJoint);
   for (int j = 0; j < connections; j++)
   {
@@ -334,7 +334,7 @@ void writeInstanceReor(ivl_lpm_t reorLpm, int instNo)
       outPiName = ivl_signal_basename(pinSig);
     }
   }
-  ivl_nexus_t inpJoint = ivl_lpm_data(reorLpm, 0);
+  ivl_nexus_t inpJoint = ivl_lpm_data(reLpm, 0);
   connections = inpJoint? ivl_nexus_ptrs(inpJoint) : 0;
   for (int j = 0; j < connections; j++)
   {
@@ -342,114 +342,50 @@ void writeInstanceReor(ivl_lpm_t reorLpm, int instNo)
     ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
     if (pinSig)
     {
-      inPiName = ivl_signal_basename(pinSig);
+      piName = ivl_signal_basename(pinSig);
       break;
     }
   }
-  if (lpmWidth > 3)
+  if (lpmWidth > 1)
   {
-    fprintf(fp, "// reor starts line no %d\n", liNo);
-    fprintf(fp, "wire [%d:0] %s%d;\n", lpmWidth-3, wireName, instNo);
-    for (int fm = 0; fm < lpmWidth - 1; fm++)
+    if (isNOT)
     {
-      if (fm)
-      {
-        if (fm == lpmWidth -2)
-          fprintf(fp, "or (%s, %s[%d], %s%d[%d]);\n", outPiName, inPiName, fm+1, wireName, instNo, fm-1);
-        else
-          fprintf(fp, "or (%s%d[%d], %s[%d], %s%d[%d]);\n", wireName, instNo, fm, inPiName, fm+1, wireName, instNo, fm-1);
-      }
-      else
-      {
-        fprintf(fp, "or (%s%d[0], %s[1], %s[0]);\n", wireName, instNo, inPiName, inPiName);
-      }
+      fprintf(fp, "// ren%s starts line no %d\n", gatName, liNo);
     }
-    fprintf(fp, "// reor ends line no %d\n", liNo);
-  }
-  else if (lpmWidth == 3)
-  {
-    fprintf(fp, "// reor starts line no %d\n", liNo);
-    fprintf(fp, "wire %s%d;\n", wireName, instNo);
-    fprintf(fp, "or (%s%d, %s[1], %s[0]);\n", wireName, instNo, inPiName, inPiName);
-    fprintf(fp, "or (%s, %s[2], %s%d);\n", outPiName, inPiName, wireName, instNo);
-    fprintf(fp, "// reor ends line no %d\n", liNo);
-  }
-  else if (lpmWidth == 2)
-  {
-    fprintf(fp, "or (%s, %s[1], %s[0]); // reor at line no %d\n", outPiName, inPiName, inPiName, liNo);
-  }
-  else
-  {
-    fprintf(fp, "or (%s, %s, _LOGIC0); // reor at line no %d\n", outPiName, inPiName, liNo);
-  }
-}
+    else
+    {
+      fprintf(fp, "// re%s starts line no %d\n", gatName, liNo);
+    }
 
-void writeInstanceRenor(ivl_lpm_t renorLpm, int instNo)
-{
-  FILE *fp = openLogFile();
-  const char *outPiName = NULL;
-  const char *inPiName = NULL;
-  const char *wireName = "renorwire";
-  unsigned liNo = ivl_lpm_lineno(renorLpm);
-  unsigned lpmWidth = ivl_lpm_width(renorLpm);
-  ivl_nexus_t outJoint = ivl_lpm_q(renorLpm);
-  unsigned connections = ivl_nexus_ptrs(outJoint);
-  for (int j = 0; j < connections; j++)
-  {
-    ivl_nexus_ptr_t aConn = ivl_nexus_ptr(outJoint, j);
-    ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
-    if (pinSig)
-    {
-      outPiName = ivl_signal_basename(pinSig);
-    }
-  }
-  ivl_nexus_t inpJoint = ivl_lpm_data(renorLpm, 0);
-  connections = inpJoint? ivl_nexus_ptrs(inpJoint) : 0;
-  for (int j = 0; j < connections; j++)
-  {
-    ivl_nexus_ptr_t aConn = ivl_nexus_ptr(inpJoint, j);
-    ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
-    if (pinSig)
-    {
-      inPiName = ivl_signal_basename(pinSig);
-      break;
-    }
-  }
-  if (lpmWidth > 3)
-  {
-    fprintf(fp, "// renor starts line no %d\n", liNo);
-    fprintf(fp, "wire [%d:0] %s%d;\n", lpmWidth-3, wireName, instNo);
-    for (int fm = 0; fm < lpmWidth - 1; fm++)
+    fprintf(fp, "wire [%d:0] %s%d;\n", lpmWidth-2, wireName, instNo);
+    for (int fm = 0; fm < lpmWidth-1; fm++)
     {
       if (fm)
       {
-        if (fm == lpmWidth -2)
-          fprintf(fp, "nor (%s, %s[%d], %s%d[%d]);\n", outPiName, inPiName, fm+1, wireName, instNo, fm-1);
-        else
-          fprintf(fp, "nor (%s%d[%d], %s[%d], %s%d[%d]);\n", wireName, instNo, fm, inPiName, fm+1, wireName, instNo, fm-1);
+        fprintf(fp, "%s (%s%d[%d], %s%d[%d], %s%d[%d]);\n", gatName, wireName, instNo, fm, piName, instNo, fm+1, wireName, instNo, fm-1);
       }
       else
       {
-        fprintf(fp, "nor (%s%d[0], %s[1], %s[0]);\n", wireName, instNo, inPiName, inPiName);
+        fprintf(fp, "%s (%s%d[0], %s%d[1], %s%d[0]);\n", gatName, wireName, instNo, piName, instNo, piName, instNo);
       }
     }
-    fprintf(fp, "// renor ends line no %d\n", liNo);
-  }
-  else if (lpmWidth == 3)
-  {
-    fprintf(fp, "// renor starts line no %d\n", liNo);
-    fprintf(fp, "wire %s%d;\n", wireName, instNo);
-    fprintf(fp, "nor (%s%d, %s[1], %s[0]);\n", wireName, instNo, inPiName, inPiName);
-    fprintf(fp, "nor (%s, %s[2], %s%d);\n", outPiName, inPiName, wireName, instNo);
-    fprintf(fp, "// renor ends line no %d\n", liNo);
-  }
-  else if (lpmWidth == 2)
-  {
-    fprintf(fp, "nor (%s, %s[1], %s[0]); // renor at line no %d\n", outPiName, inPiName, inPiName, liNo);
+    if (isNOT)
+    {
+      fprintf(fp, "not (%s, %s%d[%d]);\n", outPiName, wireName, instNo, lpmWidth-2);
+      fprintf(fp, "// ren%s ends line no %d\n", gatName, liNo);
+    }
+    else
+    {
+      fprintf(fp, "buf (%s, %s%d[%d]);\n", outPiName, wireName, instNo, lpmWidth-2);
+      fprintf(fp, "// re%s ends line no %d\n", gatName, liNo);
+    }
   }
   else
   {
-    fprintf(fp, "nor (%s, %s, _LOGIC0); // renor at line no %d\n", outPiName, inPiName, liNo);
+    if (isNOT)
+      fprintf(fp, "not (%s, %s); // ren%s at line no %d\n", outPiName, piName, gatName, liNo);
+    else
+      fprintf(fp, "buf (%s, %s); // re%s at line no %d\n", outPiName, piName,gatName, liNo);
   }
 }
 

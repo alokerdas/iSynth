@@ -541,24 +541,22 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
         fprintf(fp, "ivl_pow #(%d) pow%d (%s", lpmWidth, k, outPiName);
       break;
       case IVL_LPM_RE_AND:
-        fprintf(fp, "ivl_reand #(%d) reand%d (%s", lpmWidth, k, outPiName);
+        writeInstanceRe(anLpm, "and", k);
       break;
       case IVL_LPM_RE_NAND:
-        fprintf(fp, "ivl_renand #(%d) renand%d (%s", lpmWidth, k, outPiName);
+        writeInstanceRe(anLpm, "and", k, true);
       break;
       case IVL_LPM_RE_NOR:
-        writeInstanceRenor(anLpm, k);
-        //fprintf(fp, "ivl_renor #(%d) renor%d (%s", lpmWidth, k, outPiName);
+        writeInstanceRe(anLpm, "or", k, true);
       break;
       case IVL_LPM_RE_OR:
-        writeInstanceReor(anLpm, k);
-        //fprintf(fp, "ivl_reor #(%d) reor%d (%s", lpmWidth, k, outPiName);
+        writeInstanceRe(anLpm, "or", k);
       break;
       case IVL_LPM_RE_XNOR:
-        fprintf(fp, "ivl_rexnor #(%d) rexnor%d (%s", lpmWidth, k, outPiName);
+        writeInstanceRe(anLpm, "xor", k, true);
       break;
       case IVL_LPM_RE_XOR:
-        fprintf(fp, "ivl_rexor #(%d) rexor%d (%s", lpmWidth, k, outPiName);
+        writeInstanceRe(anLpm, "xor", k);
       break;
       case IVL_LPM_REPEAT:
         fprintf(fp, "ivl_repeat #(%d) repeat%d (%s", lpmWidth, k, outPiName);
@@ -586,7 +584,6 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
       break;
       default:
         fprintf(fp, "unknown\n");
-        printf("unknown\n");
       break;
     }
     if ((ivl_lpm_type(anLpm) != IVL_LPM_FF) &&
@@ -596,6 +593,10 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
         (ivl_lpm_type(anLpm) != IVL_LPM_LATCH) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_RE_OR) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_RE_NOR) &&
+        (ivl_lpm_type(anLpm) != IVL_LPM_RE_XOR) &&
+        (ivl_lpm_type(anLpm) != IVL_LPM_RE_XNOR) &&
+        (ivl_lpm_type(anLpm) != IVL_LPM_RE_AND) &&
+        (ivl_lpm_type(anLpm) != IVL_LPM_RE_NAND) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_CMP_EQ) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_CMP_NE) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_CMP_WNE) &&

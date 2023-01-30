@@ -1,0 +1,8 @@
+module test (
+o,
+a,
+);
+input  a;
+output  o;
+buf (o, a); // reand at line no 4
+endmodule

@@ -1,0 +1,8 @@
+module test (
+o,
+a,
+);
+input  a;
+output  o;
+not (o, a); // renor at line no 4
+endmodule
