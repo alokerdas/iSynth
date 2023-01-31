@@ -362,11 +362,11 @@ void writeInstanceRe(ivl_lpm_t reLpm, const char *gatName, int instNo, bool isNO
     {
       if (fm)
       {
-        fprintf(fp, "%s (%s%d[%d], %s%d[%d], %s%d[%d]);\n", gatName, wireName, instNo, fm, piName, instNo, fm+1, wireName, instNo, fm-1);
+        fprintf(fp, "%s (%s%d[%d], %s[%d], %s%d[%d]);\n", gatName, wireName, instNo, fm, piName, fm+1, wireName, instNo, fm-1);
       }
       else
       {
-        fprintf(fp, "%s (%s%d[0], %s%d[1], %s%d[0]);\n", gatName, wireName, instNo, piName, instNo, piName, instNo);
+        fprintf(fp, "%s (%s%d[0], %s[1], %s[0]);\n", gatName, wireName, instNo, piName, piName);
       }
     }
     if (isNOT)
@@ -385,7 +385,7 @@ void writeInstanceRe(ivl_lpm_t reLpm, const char *gatName, int instNo, bool isNO
     if (isNOT)
       fprintf(fp, "not (%s, %s); // ren%s at line no %d\n", outPiName, piName, gatName, liNo);
     else
-      fprintf(fp, "buf (%s, %s); // re%s at line no %d\n", outPiName, piName,gatName, liNo);
+      fprintf(fp, "buf (%s, %s); // re%s at line no %d\n", outPiName, piName, gatName, liNo);
   }
 }
 
