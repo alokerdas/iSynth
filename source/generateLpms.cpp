@@ -624,6 +624,103 @@ void writeInstanceCmpeq(ivl_lpm_t cmpeqLpm, int instNo, bool isEQ)
   }
 }
 
+void fullAdder(const char *outPin, const char *partProd, int instId, int bit, int itr)
+{
+  FILE *fp = openLogFile();
+  fprintf(fp, "wire [%d:0] %s%d%d;\n", bit-1, "partCry", instId, itr);
+  fprintf(fp, "wire [%d:0] %s%d%d;\n", bit-2, "partSum", instId, itr);
+  for (int bt = 0; bt < bit; bt++)
+  {
+    if (bt)
+    {
+      if (bt == bit-1)
+      {
+        // half adder
+        fprintf(fp, "xor (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "partSum", instId, itr, bt-1, partProd, instId, itr+1, bt, "partCry", instId, itr, bt-1);
+        fprintf(fp, "and (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "partCry", instId, itr, bt, partProd, instId, itr+1, bt, "partCry", instId, itr, bt-1);
+      }
+      else
+      {
+        // full adder
+        fprintf(fp, "xor (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "haSum", instId, itr, bt-1, partProd, instId, itr, bt+1, partProd, instId, itr+1, bt);
+        fprintf(fp, "xor (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "partSum", instId, itr, bt, "haSum", instId, itr, bt-1, "partCry", instId, itr, bt-1);
+        fprintf(fp, "and (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "ha0Cry", instId, itr, bt-1, partProd, instId, itr, bt+1, partProd, instId, itr+1, bt);
+        fprintf(fp, "and (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "ha1Cry", instId, itr, bt-1, "haSum", instId, itr, bt-1, "partCry", instId, itr, bt-1);
+        fprintf(fp, "or (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "partCry", instId, itr, bt, "ha0Cry", instId, itr, bt-1, "ha1Cry", instId, itr, bt-1);
+      }
+    }
+    else
+    {
+      // half adder
+      fprintf(fp, "xor (%s[%d], %s%d%d[%d], %s%d%d[%d]);\n", outPin, itr+1, partProd, instId, itr, bt+1, partProd, instId, itr+1, bt);
+      fprintf(fp, "and (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "partCry", instId, itr, bt, partProd, instId, itr, bt+1, partProd, instId, itr+1, bt);
+    }
+  }
+}
+
+void writeInstanceMultiplier(ivl_lpm_t multLpm, int instNo)
+{
+  FILE *fp = openLogFile();
+  const char *outPiName = NULL;
+  const char *in0PiName = NULL;
+  const char *in1PiName = NULL;
+  const char *wireName = "multwire";
+  unsigned liNo = ivl_lpm_lineno(multLpm);
+  unsigned lpmWidth = ivl_lpm_width(multLpm);
+  ivl_nexus_t outJoint = ivl_lpm_q(multLpm);
+  unsigned connections = ivl_nexus_ptrs(outJoint);
+  for (int j = 0; j < connections; j++)
+  {
+    ivl_nexus_ptr_t aConn = ivl_nexus_ptr(outJoint, j);
+    ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
+    if (pinSig)
+    {
+      outPiName = ivl_signal_basename(pinSig);
+    }
+  }
+  unsigned inputs = 2;
+  for (int i = 0; i < inputs; i++)
+  {
+    ivl_nexus_t inpJoint = ivl_lpm_data(multLpm, i);
+    connections = inpJoint? ivl_nexus_ptrs(inpJoint) : 0;
+    for (int j = 0; j < connections; j++)
+    {
+      ivl_nexus_ptr_t aConn = ivl_nexus_ptr(inpJoint, j);
+      ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
+      if (pinSig)
+      {
+        if (i)
+          in1PiName = ivl_signal_basename(pinSig);
+        else
+          in0PiName = ivl_signal_basename(pinSig);
+        break;
+      }
+    }
+  }
+  if (lpmWidth > 1)
+  {
+  fprintf(fp, "// mult starts line no %d\n", liNo);
+  for (int op1 = 0; op1 < lpmWidth; op1++)
+  {
+    fprintf(fp, "wire [%d:0] %s%d%d;\n", lpmWidth-1, wireName, instNo, op1);
+    for (int op2 = 0; op2 < lpmWidth; op2++)
+    {
+      fprintf(fp, "and (%s%d%d[%d], %s[%d], %s[%d]);\n", wireName, instNo, op1, op2, in0PiName, op1, in1PiName, op2);
+    }
+  }
+  fprintf(fp, "buf (%s[0], %s%d0[0]);\n", outPiName, wireName, instNo);
+  for (int adr1 = 0; adr1 < lpmWidth-1; adr1++)
+  {
+    fullAdder(outPiName, wireName, instNo, lpmWidth, adr1);
+  }
+  fprintf(fp, "// mult ends line no %d\n", liNo);
+  }
+  else
+  {
+    fprintf(fp, "and (%s, %s, %s);\n", outPiName, in0PiName, in1PiName);
+  }
+}
+
 void writeModuleMux()
 {
   FILE *fp = openLogFile();

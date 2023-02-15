@@ -36,5 +36,6 @@ extern void writeInstanceMux(ivl_lpm_t lpm, int no);
 extern void writeInstanceRe(ivl_lpm_t lpm, const char *gat, int no, bool ne = false);
 extern void writeInstanceCmpeq(ivl_lpm_t lpm, int no, bool eq = true);
 extern void writeInstanceAdder(ivl_lpm_t lpm, int no);
+extern void writeInstanceMultiplier(ivl_lpm_t lpm, int no);
 extern void writeInstanceSubtract(ivl_lpm_t lpm, int no);
 #endif

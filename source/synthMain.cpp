@@ -500,7 +500,8 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
         fprintf(fp, "ivl_mod #(%d) mod%d (%s", lpmWidth, k, outPiName);
       break;
       case IVL_LPM_MULT:
-        fprintf(fp, "ivl_mult #(%d) mult%d (%s", lpmWidth, k, outPiName);
+	writeInstanceMultiplier(anLpm, k);
+        fprintf(fp, "// ivl_mult #(%d) mult%d (%s", lpmWidth, k, outPiName);
       break;
       case IVL_LPM_MUX:
       {
