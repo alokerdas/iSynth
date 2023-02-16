@@ -501,7 +501,6 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
       break;
       case IVL_LPM_MULT:
 	writeInstanceMultiplier(anLpm, k);
-        fprintf(fp, "// ivl_mult #(%d) mult%d (%s", lpmWidth, k, outPiName);
       break;
       case IVL_LPM_MUX:
       {
@@ -591,6 +590,7 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
         (ivl_lpm_type(anLpm) != IVL_LPM_MUX) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_ADD) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_SUB) &&
+        (ivl_lpm_type(anLpm) != IVL_LPM_MULT) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_LATCH) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_RE_OR) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_RE_NOR) &&

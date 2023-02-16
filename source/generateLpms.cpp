@@ -628,32 +628,68 @@ void fullAdder(const char *outPin, const char *partProd, int instId, int bit, in
 {
   FILE *fp = openLogFile();
   fprintf(fp, "wire [%d:0] %s%d%d;\n", bit-1, "partCry", instId, itr);
-  fprintf(fp, "wire [%d:0] %s%d%d;\n", bit-2, "partSum", instId, itr);
-  for (int bt = 0; bt < bit; bt++)
-  {
-    if (bt)
+  fprintf(fp, "wire [%d:0] %s%d%d, %s%d%d, %s%d%d, %s%d%d;\n", bit-2, "partSum", instId, itr, "haSum", instId, itr, "ha0Cry", instId, itr, "ha1Cry", instId, itr);
+  if (itr)
+  { // next time, one partial product and partial sum/cry added
+    for (int bt = 0; bt < bit; bt++)
     {
-      if (bt == bit-1)
+      if (bt)
       {
-        // half adder
-        fprintf(fp, "xor (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "partSum", instId, itr, bt-1, partProd, instId, itr+1, bt, "partCry", instId, itr, bt-1);
-        fprintf(fp, "and (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "partCry", instId, itr, bt, partProd, instId, itr+1, bt, "partCry", instId, itr, bt-1);
+        if (bt == bit-1)
+        {
+          // full adder
+          fprintf(fp, "xor (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "haSum", instId, itr, bt-1, "partCry", instId, itr-1, bt, partProd, instId, itr+1, bt);
+          fprintf(fp, "xor (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "partSum", instId, itr, bt-1, "haSum", instId, itr, bt-1, "partCry", instId, itr, bt-1);
+          fprintf(fp, "and (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "ha0Cry", instId, itr, bt-1, "partCry", instId, itr-1, bt, partProd, instId, itr+1, bt);
+          fprintf(fp, "and (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "ha1Cry", instId, itr, bt-1, "haSum", instId, itr, bt-1, "partCry", instId, itr, bt-1);
+          fprintf(fp, "or (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "partCry", instId, itr, bt, "ha0Cry", instId, itr, bt-1, "ha1Cry", instId, itr, bt-1);
+        }
+        else
+        {
+          // full adder
+          fprintf(fp, "xor (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "haSum", instId, itr, bt-1, "partSum", instId, itr-1, bt, partProd, instId, itr+1, bt);
+          fprintf(fp, "xor (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "partSum", instId, itr, bt-1, "haSum", instId, itr, bt-1, "partCry", instId, itr, bt-1);
+          fprintf(fp, "and (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "ha0Cry", instId, itr, bt-1, "partSum", instId, itr-1, bt, partProd, instId, itr+1, bt);
+          fprintf(fp, "and (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "ha1Cry", instId, itr, bt-1, "haSum", instId, itr, bt-1, "partCry", instId, itr, bt-1);
+          fprintf(fp, "or (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "partCry", instId, itr, bt, "ha0Cry", instId, itr, bt-1, "ha1Cry", instId, itr, bt-1);
+        }
       }
       else
       {
-        // full adder
-        fprintf(fp, "xor (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "haSum", instId, itr, bt-1, partProd, instId, itr, bt+1, partProd, instId, itr+1, bt);
-        fprintf(fp, "xor (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "partSum", instId, itr, bt, "haSum", instId, itr, bt-1, "partCry", instId, itr, bt-1);
-        fprintf(fp, "and (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "ha0Cry", instId, itr, bt-1, partProd, instId, itr, bt+1, partProd, instId, itr+1, bt);
-        fprintf(fp, "and (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "ha1Cry", instId, itr, bt-1, "haSum", instId, itr, bt-1, "partCry", instId, itr, bt-1);
-        fprintf(fp, "or (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "partCry", instId, itr, bt, "ha0Cry", instId, itr, bt-1, "ha1Cry", instId, itr, bt-1);
+        // half adder
+        fprintf(fp, "xor (%s[%d], %s%d%d[%d], %s%d%d[%d]);\n", outPin, itr+1, "partSum", instId, itr-1, bt, partProd, instId, itr+1, bt);
+        fprintf(fp, "and (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "partCry", instId, itr, bt, "partSum", instId, itr-1, bt, partProd, instId, itr+1, bt);
       }
     }
-    else
+  }
+  else
+  { // first time, two partial products are added
+    for (int bt = 0; bt < bit; bt++)
     {
-      // half adder
-      fprintf(fp, "xor (%s[%d], %s%d%d[%d], %s%d%d[%d]);\n", outPin, itr+1, partProd, instId, itr, bt+1, partProd, instId, itr+1, bt);
-      fprintf(fp, "and (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "partCry", instId, itr, bt, partProd, instId, itr, bt+1, partProd, instId, itr+1, bt);
+      if (bt)
+      {
+        if (bt == bit-1)
+        {
+          // half adder
+          fprintf(fp, "xor (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "partSum", instId, itr, bt-1, "partCry", instId, itr, bt-1, partProd, instId, itr+1, bt);
+          fprintf(fp, "and (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "partCry", instId, itr, bt, "partCry", instId, itr, bt-1, partProd, instId, itr+1, bt);
+        }
+        else
+        {
+          // full adder
+          fprintf(fp, "xor (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "haSum", instId, itr, bt-1, partProd, instId, itr, bt+1, partProd, instId, itr+1, bt);
+          fprintf(fp, "xor (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "partSum", instId, itr, bt-1, "haSum", instId, itr, bt-1, "partCry", instId, itr, bt-1);
+          fprintf(fp, "and (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "ha0Cry", instId, itr, bt-1, partProd, instId, itr, bt+1, partProd, instId, itr+1, bt);
+          fprintf(fp, "and (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "ha1Cry", instId, itr, bt-1, "haSum", instId, itr, bt-1, "partCry", instId, itr, bt-1);
+          fprintf(fp, "or (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "partCry", instId, itr, bt, "ha0Cry", instId, itr, bt-1, "ha1Cry", instId, itr, bt-1);
+        }
+      }
+      else
+      {
+        // half adder
+        fprintf(fp, "xor (%s[%d], %s%d%d[%d], %s%d%d[%d]);\n", outPin, itr+1, partProd, instId, itr, bt+1, partProd, instId, itr+1, bt);
+        fprintf(fp, "and (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "partCry", instId, itr, bt, partProd, instId, itr, bt+1, partProd, instId, itr+1, bt);
+      }
     }
   }
 }

@@ -6,5 +6,5 @@ o,
 input  a;
 input  b;
 output  o;
-or (o, a, b);
+and (o, a, b);
 endmodule
