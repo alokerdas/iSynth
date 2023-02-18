@@ -1,0 +1,11 @@
+module test (
+o,
+a,
+b,
+);
+input  a;
+input  b;
+output  o;
+not (cmpgtBnot0, b);
+and (o, a, cmpgtBnot0);// cmpgt at line no 4
+endmodule

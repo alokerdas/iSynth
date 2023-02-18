@@ -624,6 +624,98 @@ void writeInstanceCmpeq(ivl_lpm_t cmpeqLpm, int instNo, bool isEQ)
   }
 }
 
+void writeInstanceCmpgt(ivl_lpm_t cmpgtLpm, int instNo, bool isEQ)
+{
+  FILE *fp = openLogFile();
+  const char *outPiName = NULL;
+  const char *in0PiName = NULL;
+  const char *in1PiName = NULL;
+  const char *wireAnot = "cmpgtAnot";
+  const char *wireBnot = "cmpgtBnot";
+  const char *wireGT = "cmpgtGT";
+  const char *wireLT = "cmpgtLT";
+  const char *wireEQ = "cmpgtEQ";
+  const char *wireGTEQ = "cmpgtGTEQ";
+  const char *wireOut = "cmpgtout";
+  const char *wireEQand = "cmpgtEQand";
+  unsigned liNo = ivl_lpm_lineno(cmpgtLpm);
+  unsigned lpmWidth = ivl_lpm_width(cmpgtLpm);
+  ivl_nexus_t outJoint = ivl_lpm_q(cmpgtLpm);
+  unsigned connections = ivl_nexus_ptrs(outJoint);
+  for (int j = 0; j < connections; j++)
+  {
+    ivl_nexus_ptr_t aConn = ivl_nexus_ptr(outJoint, j);
+    ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
+    if (pinSig)
+    {
+      outPiName = ivl_signal_basename(pinSig);
+    }
+  }
+  unsigned inputs = 2;
+  for (int i = 0; i < inputs; i++)
+  {
+    ivl_nexus_t inpJoint = ivl_lpm_data(cmpgtLpm, i);
+    connections = inpJoint? ivl_nexus_ptrs(inpJoint) : 0;
+    for (int j = 0; j < connections; j++)
+    {
+      ivl_nexus_ptr_t aConn = ivl_nexus_ptr(inpJoint, j);
+      ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
+      if (pinSig)
+      {
+        if (i)
+          in1PiName = ivl_signal_basename(pinSig);
+        else
+          in0PiName = ivl_signal_basename(pinSig);
+        break;
+      }
+    }
+  }
+  if (lpmWidth > 1)
+  {
+    fprintf(fp, "// cmpgt starts line no %d\n", liNo);
+    fprintf(fp, "wire [%d:0] %s%d, %s%d, %s%d, %s%d, %s%d;\n", lpmWidth-1, wireAnot, instNo,  wireBnot, instNo,  wireGT, instNo,  wireLT, instNo, wireEQ, instNo);
+    for (int fm = 0; fm < lpmWidth; fm++)
+    {
+      fprintf(fp, "not (%s%d[%d], %s[%d]);\n", wireAnot, instNo, fm, in0PiName, fm);
+      fprintf(fp, "not (%s%d[%d], %s[%d]);\n", wireBnot, instNo, fm, in1PiName, fm);
+      fprintf(fp, "and (%s%d[%d], %s[%d], %s%d[%d]);\n", wireGT, instNo, fm, in0PiName, fm, wireBnot, instNo, fm);
+      fprintf(fp, "and (%s%d[%d], %s%d[%d], %s[%d]);\n", wireLT, instNo, fm, wireAnot, instNo, fm, in1PiName, fm);
+      fprintf(fp, "nor (%s%d[%d], %s%d[%d], %s%d[%d]);\n", wireEQ, instNo, fm, wireGT, instNo, fm, wireLT, instNo, fm);
+    }
+
+    fprintf(fp, "wire [%d:0] %s%d, %s%d, %s%d;\n", lpmWidth-2, wireGTEQ, instNo, wireOut, instNo, wireEQand, instNo);
+    for (int fm = lpmWidth-1; fm >= 0; fm--)
+    {
+      if (fm)
+      {
+        if (fm == lpmWidth-1)
+        {
+          fprintf(fp, "buf (%s%d[%d], %s%d[%d]);\n", wireEQand, instNo, fm-1, wireEQ, instNo, fm);
+          fprintf(fp, "buf (%s%d[%d], %s%d[%d]);\n", wireOut, instNo, fm-1, wireGT, instNo, fm);
+        }
+        else
+        {
+          fprintf(fp, "and (%s%d[%d], %s%d[%d], %s%d[%d]);\n", wireEQand, instNo, fm-1, wireEQand, instNo, fm, wireEQ, instNo, fm);
+          fprintf(fp, "and (%s%d[%d], %s%d[%d], %s%d[%d]);\n", wireGTEQ, instNo, fm, wireEQand, instNo, fm, wireGT, instNo, fm);
+          fprintf(fp, "or (%s%d[%d], %s%d[%d], %s%d[%d]);\n", wireOut, instNo, fm-1, wireOut, instNo, fm, wireGTEQ, instNo, fm);
+        }
+      }
+      else
+      {
+        fprintf(fp, "and (%s%d[%d], %s%d[%d], %s%d[%d]);\n", wireGTEQ, instNo, fm, wireEQand, instNo, fm, wireGT, instNo, fm);
+        fprintf(fp, "or (%s, %s%d[%d], %s%d[%d]);\n", outPiName, wireOut, instNo, fm, wireGTEQ, instNo, fm);
+      }
+    }
+    fprintf(fp, "// cmpgt ends line no %d\n", liNo);
+  }
+  else
+  {
+    fprintf(fp, "not (%s%d, %s);\n", wireBnot, instNo, in1PiName);
+    fprintf(fp, "and (%s, %s, %s%d);", outPiName, in0PiName, wireBnot, instNo);
+    fprintf(fp, "// cmpgt at line no %d\n", liNo);
+  }
+}
+
 void fullAdder(const char *outPin, const char *partProd, int instId, int bit, int itr)
 {
   FILE *fp = openLogFile();
