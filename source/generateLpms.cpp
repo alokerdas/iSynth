@@ -630,8 +630,8 @@ void writeInstanceCmpgt(ivl_lpm_t cmpgtLpm, int instNo, bool isEQ)
   const char *outPiName = NULL;
   const char *in0PiName = NULL;
   const char *in1PiName = NULL;
-  const char *wireAnot = "cmpgtAnot";
-  const char *wireBnot = "cmpgtBnot";
+  const char *wireAnot = "cmpgtIN0not";
+  const char *wireBnot = "cmpgtIN1not";
   const char *wireGT = "cmpgtGT";
   const char *wireLT = "cmpgtLT";
   const char *wireEQ = "cmpgtEQ";
@@ -710,9 +710,105 @@ void writeInstanceCmpgt(ivl_lpm_t cmpgtLpm, int instNo, bool isEQ)
   }
   else
   {
+    fprintf(fp, "// cmpgt starts line no %d\n", liNo);
+    fprintf(fp, "wire %s%d;\n",  wireBnot, instNo);
     fprintf(fp, "not (%s%d, %s);\n", wireBnot, instNo, in1PiName);
-    fprintf(fp, "and (%s, %s, %s%d);", outPiName, in0PiName, wireBnot, instNo);
-    fprintf(fp, "// cmpgt at line no %d\n", liNo);
+    fprintf(fp, "and (%s, %s, %s%d);\n", outPiName, in0PiName, wireBnot, instNo);
+    fprintf(fp, "// cmpgt ends line no %d\n", liNo);
+  }
+}
+
+void writeInstanceCmpge(ivl_lpm_t cmpgeLpm, int instNo, bool isEQ)
+{
+  FILE *fp = openLogFile();
+  const char *outPiName = NULL;
+  const char *in0PiName = NULL;
+  const char *in1PiName = NULL;
+  const char *wireAnot = "cmpgeIN0not";
+  const char *wireBnot = "cmpgeIN1not";
+  const char *wireGT = "cmpgeGT";
+  const char *wireLT = "cmpgeLT";
+  const char *wireEQ = "cmpgeEQ";
+  const char *wireLTEQ = "cmpgeLTEQ";
+  const char *wireOut = "cmpgeout";
+  const char *wireEQand = "cmpgeEQand";
+  unsigned liNo = ivl_lpm_lineno(cmpgeLpm);
+  unsigned lpmWidth = ivl_lpm_width(cmpgeLpm);
+  ivl_nexus_t outJoint = ivl_lpm_q(cmpgeLpm);
+  unsigned connections = ivl_nexus_ptrs(outJoint);
+  for (int j = 0; j < connections; j++)
+  {
+    ivl_nexus_ptr_t aConn = ivl_nexus_ptr(outJoint, j);
+    ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
+    if (pinSig)
+    {
+      outPiName = ivl_signal_basename(pinSig);
+    }
+  }
+  unsigned inputs = 2;
+  for (int i = 0; i < inputs; i++)
+  {
+    ivl_nexus_t inpJoint = ivl_lpm_data(cmpgeLpm, i);
+    connections = inpJoint? ivl_nexus_ptrs(inpJoint) : 0;
+    for (int j = 0; j < connections; j++)
+    {
+      ivl_nexus_ptr_t aConn = ivl_nexus_ptr(inpJoint, j);
+      ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
+      if (pinSig)
+      {
+        if (i)
+          in1PiName = ivl_signal_basename(pinSig);
+        else
+          in0PiName = ivl_signal_basename(pinSig);
+        break;
+      }
+    }
+  }
+  if (lpmWidth > 1)
+  {
+    fprintf(fp, "// cmpge starts line no %d\n", liNo);
+    fprintf(fp, "wire [%d:0] %s%d, %s%d, %s%d, %s%d, %s%d;\n", lpmWidth-1, wireAnot, instNo,  wireBnot, instNo,  wireGT, instNo,  wireLT, instNo, wireEQ, instNo);
+    for (int fm = 0; fm < lpmWidth; fm++)
+    {
+      fprintf(fp, "not (%s%d[%d], %s[%d]);\n", wireAnot, instNo, fm, in0PiName, fm);
+      fprintf(fp, "not (%s%d[%d], %s[%d]);\n", wireBnot, instNo, fm, in1PiName, fm);
+      fprintf(fp, "and (%s%d[%d], %s[%d], %s%d[%d]);\n", wireGT, instNo, fm, in0PiName, fm, wireBnot, instNo, fm);
+      fprintf(fp, "and (%s%d[%d], %s%d[%d], %s[%d]);\n", wireLT, instNo, fm, wireAnot, instNo, fm, in1PiName, fm);
+      fprintf(fp, "nor (%s%d[%d], %s%d[%d], %s%d[%d]);\n", wireEQ, instNo, fm, wireGT, instNo, fm, wireLT, instNo, fm);
+    }
+
+    fprintf(fp, "wire [%d:0] %s%d, %s%d, %s%d;\n", lpmWidth-2, wireLTEQ, instNo, wireOut, instNo, wireEQand, instNo);
+    for (int fm = lpmWidth-1; fm >= 0; fm--)
+    {
+      if (fm)
+      {
+        if (fm == lpmWidth-1)
+        {
+          fprintf(fp, "buf (%s%d[%d], %s%d[%d]);\n", wireEQand, instNo, fm-1, wireEQ, instNo, fm);
+          fprintf(fp, "buf (%s%d[%d], %s%d[%d]);\n", wireOut, instNo, fm-1, wireLT, instNo, fm);
+        }
+        else
+        {
+          fprintf(fp, "and (%s%d[%d], %s%d[%d], %s%d[%d]);\n", wireEQand, instNo, fm-1, wireEQand, instNo, fm, wireEQ, instNo, fm);
+          fprintf(fp, "and (%s%d[%d], %s%d[%d], %s%d[%d]);\n", wireLTEQ, instNo, fm, wireEQand, instNo, fm, wireLT, instNo, fm);
+          fprintf(fp, "or (%s%d[%d], %s%d[%d], %s%d[%d]);\n", wireOut, instNo, fm-1, wireOut, instNo, fm, wireLTEQ, instNo, fm);
+        }
+      }
+      else
+      {
+        fprintf(fp, "and (%s%d[%d], %s%d[%d], %s%d[%d]);\n", wireLTEQ, instNo, fm, wireEQand, instNo, fm, wireLT, instNo, fm);
+        fprintf(fp, "nor (%s, %s%d[%d], %s%d[%d]);\n", outPiName, wireOut, instNo, fm, wireLTEQ, instNo, fm);
+      }
+    }
+    fprintf(fp, "// cmpge ends line no %d\n", liNo);
+  }
+  else
+  {
+    fprintf(fp, "// cmpge starts line no %d\n", liNo);
+    fprintf(fp, "wire %s%d;\n",  wireAnot, instNo);
+    fprintf(fp, "not (%s%d, %s);\n", wireAnot, instNo, in0PiName);
+    fprintf(fp, "nand (%s, %s%d, %s);\n", outPiName, wireAnot, instNo, in1PiName);
+    fprintf(fp, "// cmpge ends line no %d\n", liNo);
   }
 }
 

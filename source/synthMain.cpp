@@ -470,7 +470,8 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
         writeInstanceCmpeq(anLpm, k);
       break;
       case IVL_LPM_CMP_GE:
-        fprintf(fp, "ivl_cmpge #(%d) cmpge%d (%s", lpmWidth, k, outPiName);
+        writeInstanceCmpge(anLpm, k, false);
+        //fprintf(fp, "ivl_cmpge #(%d) cmpge%d (%s", lpmWidth, k, outPiName);
       break;
       case IVL_LPM_CMP_GT:
         writeInstanceCmpgt(anLpm, k, false);
@@ -599,6 +600,7 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
         (ivl_lpm_type(anLpm) != IVL_LPM_RE_AND) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_RE_NAND) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_CMP_GT) &&
+        (ivl_lpm_type(anLpm) != IVL_LPM_CMP_GE) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_CMP_EQ) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_CMP_NE) &&
         (ivl_lpm_type(anLpm) != IVL_LPM_CMP_WNE) &&

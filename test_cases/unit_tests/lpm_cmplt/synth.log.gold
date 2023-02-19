@@ -8,7 +8,7 @@ input  b;
 output  o;
 // cmpgt starts line no 4
 wire cmpgtIN1not0;
-not (cmpgtIN1not0, b);
-and (o, a, cmpgtIN1not0);
+not (cmpgtIN1not0, a);
+and (o, b, cmpgtIN1not0);
 // cmpgt ends line no 4
 endmodule

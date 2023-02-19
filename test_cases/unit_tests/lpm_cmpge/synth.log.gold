@@ -1,0 +1,14 @@
+module test (
+o,
+a,
+b,
+);
+input  a;
+input  b;
+output  o;
+// cmpge starts line no 4
+wire cmpgeIN0not0;
+not (cmpgeIN0not0, a);
+nand (o, cmpgeIN0not0, b);
+// cmpge ends line no 4
+endmodule
