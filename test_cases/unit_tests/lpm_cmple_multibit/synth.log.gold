@@ -28,7 +28,7 @@ not (cmpgeIN1not0[3], a[3]);
 and (cmpgeGT0[3], b[3], cmpgeIN1not0[3]);
 and (cmpgeLT0[3], cmpgeIN0not0[3], a[3]);
 nor (cmpgeEQ0[3], cmpgeGT0[3], cmpgeLT0[3]);
-wire [2:0] cmpgeLTEQ0, cmpgeout0, cmpgeEQand0;
+wire [2:0] cmpgeout0, cmpgeEQand0, cmpgeLTEQ0;
 buf (cmpgeEQand0[2], cmpgeEQ0[3]);
 buf (cmpgeout0[2], cmpgeLT0[3]);
 and (cmpgeEQand0[1], cmpgeEQand0[2], cmpgeEQ0[2]);

@@ -470,11 +470,10 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
         writeInstanceCmpeq(anLpm, k);
       break;
       case IVL_LPM_CMP_GE:
-        writeInstanceCmpge(anLpm, k, false);
-        //fprintf(fp, "ivl_cmpge #(%d) cmpge%d (%s", lpmWidth, k, outPiName);
+        writeInstanceCmpgt(anLpm, k, true);
       break;
       case IVL_LPM_CMP_GT:
-        writeInstanceCmpgt(anLpm, k, false);
+        writeInstanceCmpgt(anLpm, k);
       break;
       case IVL_LPM_CMP_NE:
         writeInstanceCmpeq(anLpm, k, false);
