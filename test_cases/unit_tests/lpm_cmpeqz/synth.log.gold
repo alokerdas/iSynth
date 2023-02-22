@@ -27,23 +27,34 @@ pulldown (_ivl_21[0]);
 pulldown (_ivl_21[1]);
 // ivl_cmpeqz #(2) cmpeqz0 (_ivl_7, a, _ivl_4); // line no 1
 // mux starts line no 1
-ivl_mux mux10 (_ivl_11[0], _ivl_21[0], _ivl_8[0], _ivl_7);
-ivl_mux mux11 (_ivl_11[1], _ivl_21[1], _ivl_8[1], _ivl_7);
+wire wireSnot1;
+not (wireSnot1, _ivl_7);
+wire wireASnot10, wireBS10;
+and (wireASnot10, _ivl_21[0], wireSnot1);
+and (wireBS10, _ivl_8[0], _ivl_7);
+or (_ivl_11[0], wireASnot10, wireBS10);
+wire wireASnot11, wireBS11;
+and (wireASnot11, _ivl_21[1], wireSnot1);
+and (wireBS11, _ivl_8[1], _ivl_7);
+or (_ivl_11[1], wireASnot11, wireBS11);
 // mux ends line no 1
 // ivl_cmpeqz #(2) cmpeqz2 (_ivl_15, a, _ivl_12); // line no 1
 // mux starts line no 1
-ivl_mux mux30 (_ivl_17[0], _ivl_11[0], b[0], _ivl_15);
-ivl_mux mux31 (_ivl_17[1], _ivl_11[1], b[1], _ivl_15);
+wire wireSnot3;
+not (wireSnot3, _ivl_15);
+wire wireASnot30, wireBS30;
+and (wireASnot30, _ivl_11[0], wireSnot3);
+and (wireBS30, b[0], _ivl_15);
+or (_ivl_17[0], wireASnot30, wireBS30);
+wire wireASnot31, wireBS31;
+and (wireASnot31, _ivl_11[1], wireSnot3);
+and (wireBS31, b[1], _ivl_15);
+or (_ivl_17[1], wireASnot31, wireBS31);
 // mux ends line no 1
 // latch starts line no 5
 ivl_dlat dlat40 (o[0], _ivl_17[0], _ivl_19);
 ivl_dlat dlat41 (o[1], _ivl_17[1], _ivl_19);
 // latch ends line no 5
-endmodule
-module ivl_mux (out, in0, in1, select);
-  output out;
-  input in0, in1, select;
-  assign out = select ? in1 : in0;
 endmodule
 module ivl_dlat (out, in, clock);
   output out;

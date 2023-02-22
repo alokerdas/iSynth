@@ -12,10 +12,11 @@ output  o;
 input  sl;
 pullup (_LOGIC1);
 pulldown (_LOGIC0);
-ivl_mux mux0 (o, d, c, sl); // line no 6
-endmodule
-module ivl_mux (out, in0, in1, select);
-  output out;
-  input in0, in1, select;
-  assign out = select ? in1 : in0;
+// mux starts line no 6
+wire wireSnot0, wireASnot0, wireBS0;
+not (wireSnot0, sl);
+and (wireASnot0, d, wireSnot0);
+and (wireBS0, c, sl);
+or (o, wireASnot0, wireBS0);
+// mux ends line no 6
 endmodule

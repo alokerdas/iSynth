@@ -33,7 +33,6 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
   static set<string> moduleNames;
   FILE *fp = openLogFile();
   set<string> ffNames;
-  int writeMux = 0;
   int writeLatch = 0;
 
 
@@ -504,7 +503,6 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
       break;
       case IVL_LPM_MUX:
       {
-        writeMux = 1;
         writeInstanceMux(anLpm, k);
       }
       break;
@@ -705,8 +703,6 @@ int draw_scope_port(map<int, map<string, string> > & table, ivl_scope_t scope)
   set<string>::iterator itr;
   for (itr = ffNames.begin(); itr != ffNames.end(); itr++)
     writeModuleFF(*itr);
-  if (writeMux)
-    writeModuleMux();
   if (writeLatch)
     writeModuleLatch();
   return 0;

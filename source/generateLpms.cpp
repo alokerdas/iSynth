@@ -248,6 +248,7 @@ void writeInstanceMux(ivl_lpm_t muxLpm, int instNo)
     }
   }
   const char *selName = NULL;
+  unsigned selBits = ivl_lpm_selects(muxLpm);
   ivl_nexus_t selJoint = ivl_lpm_select(muxLpm);
   connections = selJoint? ivl_nexus_ptrs(selJoint) : 0;
   for (int j = 0; j < connections; j++)
@@ -260,59 +261,118 @@ void writeInstanceMux(ivl_lpm_t muxLpm, int instNo)
       break;
     }
   }
+  vector<string> piNames(inps);
+  const char *piName = NULL;
+  for (int i = 0; i < inps; i++)
+  {
+    ivl_nexus_t inpJoint = ivl_lpm_data(muxLpm, i);
+    connections = inpJoint? ivl_nexus_ptrs(inpJoint) : 0;
+    for (int j = 0; j < connections; j++)
+    {
+      ivl_nexus_ptr_t aConn = ivl_nexus_ptr(inpJoint, j);
+      ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
+      if (pinSig)
+      {
+        piName = ivl_signal_basename(pinSig);
+	piNames[i] = piName;
+        break;
+      }
+    }
+  }
+  fprintf(fp, "// mux starts line no %d\n", liNo);
   if (lpmWidth > 1)
   {
-    fprintf(fp, "// mux starts line no %d\n", liNo);
-    for (int fm = 0; fm < lpmWidth; fm++)
+    if (selBits > 1)
     {
-      if (outPiName)
-        fprintf(fp, "ivl_mux mux%d%d (%s[%d]", instNo, fm, outPiName, fm);
-      for (int i = 0; i < inps; i++)
+      fprintf(fp, "wire [%d:0] %s%d;\n", selBits-1, "wireSnot", instNo);
+      for (int s = 0; s < selBits; s++)
       {
-        ivl_nexus_t inpJoint = ivl_lpm_data(muxLpm, i);
-        connections = inpJoint? ivl_nexus_ptrs(inpJoint) : 0;
-        for (int j = 0; j < connections; j++)
+        fprintf(fp, "not (%s%d[%d], %s[%d]);\n", "wireSnot", instNo, s, selName, s);
+      }
+      for (int bt = 0; bt < lpmWidth; bt++)
+      {
+        int inpCnt = piNames.size();
+        for (int s = 0; s < selBits; s++)
         {
-          ivl_nexus_ptr_t aConn = ivl_nexus_ptr(inpJoint, j);
-          ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
-          if (pinSig)
+          fprintf(fp, "wire [%d:0] %s%d%d%d, %s%d%d%d, %s%d%d%d;\n", inpCnt/2-1, "wireASnot", instNo, bt, s, "wireBS", instNo, bt, s, "muxOut", instNo, bt, s);
+          for (int in = 0; in < inpCnt; in++)
           {
-            const char *piName = ivl_signal_basename(pinSig);
-            fprintf(fp, ", %s[%d]", piName, fm);
-            break;
+            int muxNo = in / 2;
+            if (s)
+            {
+              fprintf(fp, "and (%s%d%d%d[%d], %s%d%d%d[%d], %s%d[%d]);\n", "wireASnot", instNo, bt, s, muxNo, "muxOut", instNo, bt, s-1, in++, "wireSnot", instNo, s);
+              fprintf(fp, "and (%s%d%d%d[%d], %s%d%d%d[%d], %s[%d]);\n", "wireBS", instNo, bt, s, muxNo, "muxOut", instNo, bt, s-1, in, selName, s);
+              if (s == selBits-1)
+                fprintf(fp, "or (%s[%d], %s%d%d%d[%d], %s%d%d%d[%d]);\n", outPiName, bt, "wireASnot", instNo, bt, s, muxNo, "wireBS", instNo, bt, s, muxNo);
+              else
+                fprintf(fp, "or (%s%d%d%d[%d], %s%d%d%d[%d], %s%d%d%d[%d]);\n", "muxOut", instNo, bt, s, muxNo, "wireASnot", instNo, bt, s, muxNo, "wireBS", instNo, bt, s, muxNo);
+            }
+            else
+            {
+              fprintf(fp, "and (%s%d%d%d[%d], %s[%d], %s%d[%d]);\n", "wireASnot", instNo, bt, s, muxNo, piNames[in++].data(), bt, "wireSnot", instNo, s);
+              fprintf(fp, "and (%s%d%d%d[%d], %s[%d], %s[%d]);\n", "wireBS", instNo, bt, s, muxNo, piNames[in].data(), bt, selName, s);
+              fprintf(fp, "or (%s%d%d%d[%d], %s%d%d%d[%d], %s%d%d%d[%d]);\n", "muxOut", instNo, bt, s, muxNo, "wireASnot", instNo, bt, s, muxNo, "wireBS", instNo, bt, s, muxNo);
+            }
           }
+          inpCnt /= 2;
         }
       }
-      if (selName)
-        fprintf(fp, ", %s", selName);
-      fprintf(fp, ");\n");
     }
-    fprintf(fp, "// mux ends line no %d\n", liNo);
+    else
+    {
+      fprintf(fp, "wire %s%d;\n", "wireSnot", instNo);
+      fprintf(fp, "not (%s%d, %s);\n", "wireSnot", instNo, selName);
+      for (int bt = 0; bt < lpmWidth; bt++)
+      {
+        fprintf(fp, "wire %s%d%d, %s%d%d;\n", "wireASnot", instNo, bt, "wireBS", instNo, bt);
+        fprintf(fp, "and (%s%d%d, %s[%d], %s%d);\n", "wireASnot", instNo, bt, piNames[0].data(), bt, "wireSnot", instNo);
+        fprintf(fp, "and (%s%d%d, %s[%d], %s);\n", "wireBS", instNo, bt, piNames[1].data(), bt, selName);
+        fprintf(fp, "or (%s[%d], %s%d%d, %s%d%d);\n", outPiName, bt, "wireASnot", instNo, bt, "wireBS", instNo, bt);
+      }
+    }
   }
   else
   {
-    if (outPiName)
-      fprintf(fp, "ivl_mux mux%d (%s", instNo, outPiName);
-    for (int i = 0; i < inps; i++)
+    if (selBits > 1)
     {
-      ivl_nexus_t inpJoint = ivl_lpm_data(muxLpm, i);
-      connections = inpJoint? ivl_nexus_ptrs(inpJoint) : 0;
-      for (int j = 0; j < connections; j++)
+      int inpCnt = piNames.size();
+      fprintf(fp, "wire [%d:0] %s%d;\n", selBits-1, "wireSnot", instNo);
+      for (int s = 0; s < selBits; s++)
       {
-        ivl_nexus_ptr_t aConn = ivl_nexus_ptr(inpJoint, j);
-        ivl_signal_t pinSig = ivl_nexus_ptr_sig(aConn);
-        if (pinSig)
+        fprintf(fp, "wire [%d:0] %s%d%d, %s%d%d, %s%d%d;\n", inpCnt/2-1, "wireASnot", instNo, s, "wireBS", instNo, s, "muxOut", instNo, s);
+        fprintf(fp, "not (%s%d[%d], %s[%d]);\n", "wireSnot", instNo, s, selName, s);
+        for (int in = 0; in < inpCnt; in++)
         {
-          const char *piName = ivl_signal_basename(pinSig);
-          fprintf(fp, ", %s", piName);
-          break;
+          int muxNo = in / 2;
+          if (s)
+          {
+            fprintf(fp, "and (%s%d%d[%d], %s%d%d[%d], %s%d[%d]);\n", "wireASnot", instNo, s, muxNo, "muxOut", instNo, s-1, in++, "wireSnot", instNo, s);
+            fprintf(fp, "and (%s%d%d[%d], %s%d%d[%d], %s[%d]);\n", "wireBS", instNo, s, muxNo, "muxOut", instNo, s-1, in, selName, s);
+            if (s == selBits-1)
+              fprintf(fp, "or (%s, %s%d%d[%d], %s%d%d[%d]);\n", outPiName, "wireASnot", instNo, s, muxNo, "wireBS", instNo, s, muxNo);
+            else
+              fprintf(fp, "or (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "muxOut", instNo, s, muxNo, "wireASnot", instNo, s, muxNo, "wireBS", instNo, s, muxNo);
+          }
+          else
+          {
+            fprintf(fp, "and (%s%d%d[%d], %s, %s%d[%d]);\n", "wireASnot", instNo, s, muxNo, piNames[in++].data(), "wireSnot", instNo, s);
+            fprintf(fp, "and (%s%d%d[%d], %s, %s[%d]);\n", "wireBS", instNo, s, muxNo, piNames[in].data(), selName, s);
+            fprintf(fp, "or (%s%d%d[%d], %s%d%d[%d], %s%d%d[%d]);\n", "muxOut", instNo, s, muxNo, "wireASnot", instNo, s, muxNo, "wireBS", instNo, s, muxNo);
+          }
         }
+        inpCnt /= 2;
       }
     }
-    if (selName)
-      fprintf(fp, ", %s", selName);
-    fprintf(fp, "); // line no %d\n", liNo);
+    else
+    {
+      fprintf(fp, "wire %s%d, %s%d, %s%d;\n", "wireSnot", instNo, "wireASnot", instNo, "wireBS", instNo);
+      fprintf(fp, "not (%s%d, %s);\n", "wireSnot", instNo, selName);
+      fprintf(fp, "and (%s%d, %s, %s%d);\n", "wireASnot", instNo, piNames[0].data(), "wireSnot", instNo);
+      fprintf(fp, "and (%s%d, %s, %s);\n", "wireBS", instNo, piNames[1].data(), selName);
+      fprintf(fp, "or (%s, %s%d, %s%d);\n", outPiName, "wireASnot", instNo, "wireBS", instNo);
+    }
   }
+  fprintf(fp, "// mux ends line no %d\n", liNo);
 }
 
 void writeInstanceRe(ivl_lpm_t reLpm, const char *gatName, int instNo, bool isNOT)
@@ -905,16 +965,6 @@ void writeInstanceMultiplier(ivl_lpm_t multLpm, int instNo)
   {
     fprintf(fp, "and (%s, %s, %s);\n", outPiName, in0PiName, in1PiName);
   }
-}
-
-void writeModuleMux()
-{
-  FILE *fp = openLogFile();
-  fprintf(fp, "module ivl_mux (out, in0, in1, select);\n");
-  fprintf(fp, "  output out;\n");
-  fprintf(fp, "  input in0, in1, select;\n");
-  fprintf(fp, "  assign out = select ? in1 : in0;\n");
-  fprintf(fp, "endmodule\n");
 }
 
 void writeModuleFF(string ffname)

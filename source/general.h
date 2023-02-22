@@ -23,6 +23,7 @@
 #include <map>
 #include <set>
 #include <stack>
+#include <vector>
 #include <string>
 #include <stdio.h>
 #include <stdlib.h>
